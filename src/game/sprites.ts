@@ -2,379 +2,186 @@ import Phaser from 'phaser';
 import { creature, radiusPx } from './canon';
 import { DANGER_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL, WELL_TOP } from './layout';
 
-const DPR = 2;
-export const ARENA_KEY = 'arena';
-
-function clampByte(n: number): number {
-  return Math.max(0, Math.min(255, n | 0));
+function mix(color: number, other: number, t: number): number {
+  const ar = (color >> 16) & 255;
+  const ag = (color >> 8) & 255;
+  const ab = color & 255;
+  const br = (other >> 16) & 255;
+  const bg = (other >> 8) & 255;
+  const bb = other & 255;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const b = Math.round(ab + (bb - ab) * t);
+  return (r << 16) | (g << 8) | b;
 }
 
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+function lighten(color: number, t: number): number {
+  return mix(color, 0xffffff, t);
 }
 
-function rgbToHex(r: number, g: number, b: number): string {
-  return `#${[r, g, b].map((v) => clampByte(v).toString(16).padStart(2, '0')).join('')}`;
+function darken(color: number, t: number): number {
+  return mix(color, 0x050506, t);
 }
 
-function mix(hex: string, other: string, t: number): string {
-  const a = hexToRgb(hex);
-  const b = hexToRgb(other);
-  return rgbToHex(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t);
-}
-
-function lighten(hex: string, t: number): string {
-  return mix(hex, '#ffffff', t);
-}
-
-function darken(hex: string, t: number): string {
-  return mix(hex, '#050506', t);
-}
-
-function creatureKey(tier: number): string {
-  return `lab-orb-${tier}`;
-}
-
-function polygon(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
+function addPoly(
+  scene: Phaser.Scene,
   r: number,
+  color: number,
   sides: number,
   rot: number,
-  round: number,
-): void {
-  const pts: Array<[number, number]> = [];
-  for (let i = 0; i < sides; i++) {
+): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics();
+  g.fillStyle(color, 1);
+  g.beginPath();
+  for (let i = 0; i <= sides; i++) {
     const a = rot + (Math.PI * 2 * i) / sides;
-    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    if (i === 0) g.moveTo(x, y);
+    else g.lineTo(x, y);
   }
-  ctx.beginPath();
-  for (let i = 0; i < sides; i++) {
-    const prev = pts[(i + sides - 1) % sides];
-    const cur = pts[i];
-    const next = pts[(i + 1) % sides];
-    if (!prev || !cur || !next) continue;
-    const p1x = cur[0] + (prev[0] - cur[0]) * round;
-    const p1y = cur[1] + (prev[1] - cur[1]) * round;
-    const p2x = cur[0] + (next[0] - cur[0]) * round;
-    const p2y = cur[1] + (next[1] - cur[1]) * round;
-    if (i === 0) ctx.moveTo(p1x, p1y);
-    else ctx.lineTo(p1x, p1y);
-    ctx.quadraticCurveTo(cur[0], cur[1], p2x, p2y);
-  }
-  ctx.closePath();
+  g.closePath();
+  g.fillPath();
+  return g;
 }
 
-function pathSilhouette(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, tier: number): void {
-  switch (tier) {
-    case 2:
-      polygon(ctx, cx, cy, r, 6, Math.PI / 6, 0.32);
-      return;
-    case 4:
-      ctx.beginPath();
-      ctx.ellipse(cx, cy + r * 0.03, r * 0.94, r * 1.01, 0, 0, Math.PI * 2);
-      return;
-    case 5:
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r * 1.04, r * 0.93, 0, 0, Math.PI * 2);
-      return;
-    case 8:
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r * 1.06, r * 0.9, 0, 0, Math.PI * 2);
-      return;
-    case 9:
-      polygon(ctx, cx, cy, r, 5, -Math.PI / 2, 0.4);
-      return;
-    case 10:
-      polygon(ctx, cx, cy, r, 8, Math.PI / 8, 0.36);
-      return;
-    default:
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  }
+function addBody(scene: Phaser.Scene, r: number, color: number, tier: number): Phaser.GameObjects.GameObject {
+  if (tier === 2) return addPoly(scene, r, color, 6, Math.PI / 6);
+  if (tier === 9) return addPoly(scene, r, color, 5, -Math.PI / 2);
+  if (tier === 10) return addPoly(scene, r, color, 8, Math.PI / 8);
+  if (tier === 4) return scene.add.ellipse(0, r * 0.03, r * 1.88, r * 2.02, color, 1);
+  if (tier === 5) return scene.add.ellipse(0, 0, r * 2.08, r * 1.86, color, 1);
+  if (tier === 8) return scene.add.ellipse(0, 0, r * 2.12, r * 1.8, color, 1);
+  return scene.add.circle(0, 0, r, color, 1);
 }
 
-function paintPattern(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, hex: string, tier: number): void {
-  ctx.save();
-  ctx.globalAlpha = 0.22;
-  ctx.strokeStyle = lighten(hex, 0.55);
-  ctx.fillStyle = lighten(hex, 0.4);
+function addPattern(scene: Phaser.Scene, r: number, color: number, tier: number): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics();
+  const ink = lighten(color, 0.55);
+  g.lineStyle(Math.max(1, r * 0.05), ink, 0.28);
+  g.fillStyle(ink, 0.2);
 
   if (tier === 1) {
-    for (const [dx, dy, s] of [
-      [-0.28, -0.12, 0.16],
-      [0.22, 0.08, 0.12],
-      [-0.04, 0.28, 0.1],
-      [0.3, -0.28, 0.08],
-    ] as const) {
-      ctx.beginPath();
-      ctx.arc(cx + r * dx, cy + r * dy, r * s, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    g.fillCircle(-r * 0.28, -r * 0.1, r * 0.16);
+    g.fillCircle(r * 0.22, r * 0.1, r * 0.11);
+    g.fillCircle(-r * 0.02, r * 0.28, r * 0.09);
   } else if (tier === 2) {
-    ctx.lineWidth = Math.max(1, r * 0.04);
     for (let i = 0; i < 6; i++) {
-      const a = (Math.PI / 3) * i + Math.PI / 6;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(a) * r * 0.72, cy + Math.sin(a) * r * 0.72);
-      ctx.stroke();
+      const a = Math.PI / 6 + (Math.PI / 3) * i;
+      g.lineBetween(0, 0, Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7);
     }
   } else if (tier === 3) {
-    ctx.lineWidth = Math.max(1.2, r * 0.06);
-    ctx.lineCap = 'round';
+    g.lineStyle(Math.max(1.2, r * 0.06), ink, 0.35);
     for (let i = 0; i < 4; i++) {
-      const a = (Math.PI / 2) * i + Math.PI / 4;
-      const x = cx + Math.cos(a) * r * 0.42;
-      const y = cy + Math.sin(a) * r * 0.42;
-      ctx.beginPath();
-      ctx.moveTo(x - r * 0.12, y);
-      ctx.lineTo(x + r * 0.12, y);
-      ctx.moveTo(x, y - r * 0.12);
-      ctx.lineTo(x, y + r * 0.12);
-      ctx.stroke();
+      const a = Math.PI / 4 + (Math.PI / 2) * i;
+      const x = Math.cos(a) * r * 0.4;
+      const y = Math.sin(a) * r * 0.4;
+      g.lineBetween(x - r * 0.1, y, x + r * 0.1, y);
+      g.lineBetween(x, y - r * 0.1, x, y + r * 0.1);
     }
-  } else if (tier === 5) {
-    ctx.globalAlpha = 0.18;
-    ctx.lineWidth = Math.max(1, r * 0.05);
-    ctx.beginPath();
-    ctx.arc(cx, cy + r * 0.04, r * 0.42, 0, Math.PI * 2);
-    ctx.stroke();
   } else if (tier === 6) {
-    ctx.lineWidth = Math.max(1.2, r * 0.055);
-    ctx.beginPath();
+    g.beginPath();
     for (let i = 0; i <= 36; i++) {
       const t = i / 36;
-      const a = t * Math.PI * 3.2;
-      const rr = r * 0.12 + r * 0.58 * t;
-      const x = cx + Math.cos(a) * rr;
-      const y = cy + Math.sin(a) * rr;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      const a = t * Math.PI * 3.1;
+      const rr = r * 0.1 + r * 0.58 * t;
+      const x = Math.cos(a) * rr;
+      const y = Math.sin(a) * rr;
+      if (i === 0) g.moveTo(x, y);
+      else g.lineTo(x, y);
     }
-    ctx.stroke();
+    g.strokePath();
   } else if (tier === 7) {
-    ctx.lineWidth = Math.max(1, r * 0.045);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.38, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (tier === 8) {
-    ctx.globalAlpha = 0.28;
-    ctx.fillStyle = lighten(hex, 0.25);
-    for (const [dx, dy, s] of [
-      [-0.2, -0.18, 0.07],
-      [0.26, -0.06, 0.05],
-      [0.04, 0.22, 0.06],
-    ] as const) {
-      ctx.beginPath();
-      ctx.arc(cx + r * dx, cy + r * dy, r * s, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    g.strokeCircle(0, 0, r * 0.38);
+    g.fillCircle(0, 0, r * 0.16);
   } else if (tier === 9) {
-    ctx.lineWidth = Math.max(1, r * 0.04);
     for (let i = 0; i < 5; i++) {
       const a = -Math.PI / 2 + (Math.PI * 2 * i) / 5;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(a) * r * 0.62, cy + Math.sin(a) * r * 0.62);
-      ctx.stroke();
-    }
-  } else if (tier === 10) {
-    ctx.globalAlpha = 0.16;
-    for (let i = 0; i < 14; i++) {
-      const a = (Math.PI * 2 * i) / 14;
-      ctx.beginPath();
-      ctx.arc(cx + Math.cos(a) * r * 0.48, cy + Math.sin(a) * r * 0.48, r * 0.045, 0, Math.PI * 2);
-      ctx.fill();
+      g.lineBetween(0, 0, Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58);
     }
   } else if (tier === 11) {
-    ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = '#9BE7FF';
-    ctx.lineWidth = Math.max(1.4, r * 0.045);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.78, -0.9, 0.6);
-    ctx.stroke();
-    ctx.strokeStyle = '#FFB5E0';
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.78, 2.1, 3.4);
-    ctx.stroke();
+    g.lineStyle(Math.max(1.4, r * 0.05), 0x9be7ff, 0.4);
+    g.beginPath();
+    g.arc(0, 0, r * 0.78, -0.9, 0.55, false);
+    g.strokePath();
+    g.lineStyle(Math.max(1.4, r * 0.05), 0xffb5e0, 0.35);
+    g.beginPath();
+    g.arc(0, 0, r * 0.78, 2.1, 3.4, false);
+    g.strokePath();
   }
-  ctx.restore();
+  return g;
 }
 
-function paintOrb(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, hex: string, tier: number): void {
-  pathSilhouette(ctx, cx, cy, r, tier);
-  const body = ctx.createRadialGradient(cx - r * 0.32, cy - r * 0.38, r * 0.06, cx + r * 0.08, cy + r * 0.16, r * 1.05);
-  body.addColorStop(0, lighten(hex, 0.52));
-  body.addColorStop(0.38, lighten(hex, 0.08));
-  body.addColorStop(0.78, hex);
-  body.addColorStop(1, darken(hex, 0.38));
-  ctx.fillStyle = body;
-  ctx.fill();
-
-  ctx.save();
-  pathSilhouette(ctx, cx, cy, r, tier);
-  ctx.clip();
-
-  const inner = ctx.createRadialGradient(cx, cy, r * 0.15, cx, cy, r);
-  inner.addColorStop(0, mix(hex, '#ffffff', 0.22));
-  inner.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.globalAlpha = 0.35;
-  ctx.fillStyle = inner;
-  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-
-  paintPattern(ctx, cx, cy, r, hex, tier);
-
-  ctx.globalAlpha = 0.55;
-  const spec = ctx.createRadialGradient(cx - r * 0.34, cy - r * 0.42, 0, cx - r * 0.34, cy - r * 0.42, r * 0.42);
-  spec.addColorStop(0, 'rgba(255,255,255,0.95)');
-  spec.addColorStop(0.35, 'rgba(255,255,255,0.28)');
-  spec.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = spec;
-  ctx.beginPath();
-  ctx.ellipse(cx - r * 0.28, cy - r * 0.38, r * 0.34, r * 0.2, -0.55, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.globalAlpha = 0.42;
-  ctx.strokeStyle = lighten(hex, 0.62);
-  ctx.lineWidth = Math.max(1.5, r * 0.07);
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.86, -2.5, -0.35);
-  ctx.stroke();
-
-  ctx.globalAlpha = 0.28;
-  ctx.strokeStyle = darken(hex, 0.45);
-  ctx.lineWidth = Math.max(1.2, r * 0.06);
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.88, 0.45, 2.55);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.save();
-  ctx.strokeStyle = 'rgba(11,11,12,0.42)';
-  ctx.lineWidth = Math.max(1.4, r * 0.055);
-  pathSilhouette(ctx, cx, cy, r - ctx.lineWidth * 0.15, tier);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function makeCanvas(w: number, h: number): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  return c;
-}
-
-export function bakeCreatureTexture(scene: Phaser.Scene, tier: number): string {
-  const key = creatureKey(tier);
-  if (scene.textures.exists(key)) return key;
-  const c = creature(tier);
-  const r = radiusPx(tier);
-  const pad = Math.ceil(r * 0.2);
-  const css = Math.ceil((r + pad) * 2);
-  const canvas = makeCanvas(css * DPR, css * DPR);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return key;
-  ctx.scale(DPR, DPR);
-  ctx.imageSmoothingEnabled = true;
-  const cx = css / 2;
-  const cy = css / 2;
-  paintOrb(ctx, cx, cy, r, c.hex, tier);
-  scene.textures.addCanvas(key, canvas, true);
-  return key;
-}
-
-export function bakeAllCreatureTextures(scene: Phaser.Scene): void {
-  for (let t = 1; t <= 11; t++) bakeCreatureTexture(scene, t);
-}
-
-export function bakeArenaTexture(scene: Phaser.Scene): void {
-  if (scene.textures.exists(ARENA_KEY)) return;
-  const canvas = makeCanvas(W * DPR, H * DPR);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  ctx.scale(DPR, DPR);
-
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#101012');
-  bg.addColorStop(0.45, '#0B0B0C');
-  bg.addColorStop(1, '#080809');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  const vignette = ctx.createRadialGradient(W / 2, H * 0.42, 40, W / 2, H * 0.46, 520);
-  vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(0,0,0,0.55)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, W, H);
+export function paintArena(scene: Phaser.Scene): void {
+  const g = scene.add.graphics().setDepth(0);
+  g.fillStyle(0x0b0b0c, 1);
+  g.fillRect(0, 0, W, H);
+  g.fillStyle(0x000000, 0.35);
+  g.fillCircle(W / 2, H * 0.52, 340);
 
   const wellW = INNER_R - INNER_L;
   const wellH = FLOOR_Y - WELL_TOP;
-  const x = INNER_L;
-  const y = WELL_TOP;
-  const rad = 22;
 
-  ctx.save();
-  ctx.shadowColor = 'rgba(232,255,71,0.08)';
-  ctx.shadowBlur = 28;
-  ctx.fillStyle = '#141416';
-  roundRect(ctx, x - 3, y - 3, wellW + 6, wellH + WALL + 6, rad);
-  ctx.fill();
-  ctx.restore();
+  g.fillStyle(0x18181c, 1);
+  g.fillRoundedRect(INNER_L - 4, WELL_TOP - 4, wellW + 8, wellH + WALL + 6, 24);
+  g.fillStyle(0x101012, 1);
+  g.fillRoundedRect(INNER_L, WELL_TOP, wellW, wellH + 2, 20);
+  g.fillStyle(0x0c0c0e, 1);
+  g.fillRoundedRect(INNER_L + 3, WELL_TOP + 8, wellW - 6, wellH - 10, 16);
 
-  ctx.fillStyle = '#0A0A0B';
-  roundRect(ctx, x, y, wellW, wellH + WALL, rad);
-  ctx.fill();
+  g.fillStyle(0xf4f1ea, 0.08);
+  g.fillRect(INNER_L - WALL, WELL_TOP - 4, WALL, FLOOR_Y - (WELL_TOP - 4) + WALL);
+  g.fillRect(INNER_R, WELL_TOP - 4, WALL, FLOOR_Y - (WELL_TOP - 4) + WALL);
+  g.fillRect(INNER_L - WALL, FLOOR_Y, wellW + WALL * 2, WALL);
 
-  const well = ctx.createLinearGradient(x, y, x, y + wellH);
-  well.addColorStop(0, '#151518');
-  well.addColorStop(0.35, '#101012');
-  well.addColorStop(1, '#0C0C0E');
-  ctx.fillStyle = well;
-  roundRect(ctx, x, y, wellW, wellH, rad);
-  ctx.fill();
+  g.fillStyle(0xf4f1ea, 0.14);
+  g.fillRect(INNER_L - WALL, FLOOR_Y, wellW + WALL * 2, 3);
 
-  ctx.strokeStyle = 'rgba(244,241,234,0.08)';
-  ctx.lineWidth = 1;
-  roundRect(ctx, x + 0.5, y + 0.5, wellW - 1, wellH - 1, rad - 1);
-  ctx.stroke();
+  g.fillStyle(0xff3b4a, 0.05);
+  g.fillRect(INNER_L, DANGER_Y - 16, wellW, 32);
 
-  ctx.fillStyle = 'rgba(244,241,234,0.07)';
-  ctx.fillRect(INNER_L - WALL, WELL_TOP - 4, WALL, FLOOR_Y - (WELL_TOP - 4) + WALL);
-  ctx.fillRect(INNER_R, WELL_TOP - 4, WALL, FLOOR_Y - (WELL_TOP - 4) + WALL);
-  ctx.fillRect(INNER_L - WALL, FLOOR_Y, wellW + WALL * 2, WALL);
-
-  const lip = ctx.createLinearGradient(0, FLOOR_Y, 0, FLOOR_Y + WALL);
-  lip.addColorStop(0, 'rgba(244,241,234,0.16)');
-  lip.addColorStop(1, 'rgba(244,241,234,0.04)');
-  ctx.fillStyle = lip;
-  ctx.fillRect(INNER_L - WALL, FLOOR_Y, wellW + WALL * 2, 3);
-
-  ctx.fillStyle = 'rgba(232,255,71,0.035)';
-  ctx.fillRect(INNER_L, DANGER_Y - 18, wellW, 36);
-
-  scene.textures.addCanvas(ARENA_KEY, canvas, true);
+  g.lineStyle(1, 0xf4f1ea, 0.08);
+  g.strokeRoundedRect(INNER_L + 1, WELL_TOP + 1, wellW - 2, wellH - 2, 18);
 }
 
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-): void {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
+export function drawCreature(scene: Phaser.Scene, x: number, y: number, tier: number): Phaser.GameObjects.Container {
+  const c = creature(tier);
+  const r = radiusPx(tier);
+  const root = scene.add.container(x, y);
+  const glow = scene.add.circle(0, 0, r * 1.14, c.color, 0.16);
+  const thickness = addBody(scene, r, darken(c.color, 0.38), tier);
+  if ('setPosition' in thickness) (thickness as Phaser.GameObjects.Shape).setPosition(0, r * 0.08);
+  const base = addBody(scene, r, c.color, tier);
+  const shade = scene.add.graphics();
+  shade.fillStyle(0x000000, 0.2);
+  shade.slice(0, r * 0.12, r * 0.92, 0.15, Math.PI - 0.15, false);
+  shade.fillPath();
+  const pattern = addPattern(scene, r, c.color, tier);
+  const hi = scene.add.ellipse(-r * 0.26, -r * 0.34, r * 0.72, r * 0.4, 0xffffff, 0.26);
+  const spec = scene.add.ellipse(-r * 0.3, -r * 0.4, r * 0.3, r * 0.16, 0xffffff, 0.5);
+  const rim = scene.add.graphics();
+  rim.lineStyle(Math.max(1.6, r * 0.07), lighten(c.color, 0.62), 0.45);
+  rim.beginPath();
+  rim.arc(0, 0, r * 0.86, -2.45, -0.35, false);
+  rim.strokePath();
+  const edge = scene.add.graphics();
+  edge.lineStyle(Math.max(1.4, r * 0.055), 0x0b0b0c, 0.4);
+  edge.strokeCircle(0, 0, r - 0.8);
+  const emoji = scene.add
+    .text(0, -r * 0.06, c.emoji, {
+      fontSize: `${Math.max(14, r * 0.9)}px`,
+      align: 'center',
+    })
+    .setOrigin(0.5);
+  const code = scene.add
+    .text(0, r * 0.4, c.code, {
+      fontFamily: 'Outfit, ui-sans-serif, system-ui, sans-serif',
+      fontSize: `${Math.max(8, r * 0.28)}px`,
+      color: '#0B0B0C',
+      fontStyle: 'bold',
+    })
+    .setOrigin(0.5);
+  root.add([glow, thickness, base, shade, pattern, hi, spec, rim, edge, emoji, code]);
+  root.setDepth(10);
+  return root;
 }

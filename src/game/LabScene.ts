@@ -3,7 +3,7 @@ import { creature, radiusPx, rollDropTier } from './canon';
 import { DANGER_Y, DROP_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL } from './layout';
 import { loadBest, mergePoints, popPoints, resetScore, saveScore } from './score';
 import { sfxDrop, sfxMerge, sfxOver, sfxPop, unlockSfx } from './sfx';
-import { ARENA_KEY, bakeAllCreatureTextures, bakeArenaTexture, bakeCreatureTexture } from './sprites';
+import { drawCreature, paintArena } from './sprites';
 
 export { H, W };
 
@@ -75,8 +75,6 @@ export class LabScene extends Phaser.Scene {
     this.contacts.clear();
     this.byBody = new WeakMap();
     this.nextTier = rollDropTier();
-    bakeArenaTexture(this);
-    bakeAllCreatureTextures(this);
     this.paintStatic();
     this.matter.world.setGravity(0, 1.55);
 
@@ -145,7 +143,7 @@ export class LabScene extends Phaser.Scene {
   }
 
   private paintStatic(): void {
-    this.add.image(W / 2, H / 2, ARENA_KEY).setDisplaySize(W, H).setDepth(0);
+    paintArena(this);
 
     this.guide = this.add.graphics().setDepth(2);
     this.danger = this.add.graphics().setDepth(3);
@@ -196,7 +194,7 @@ export class LabScene extends Phaser.Scene {
     this.destroyPreview();
     const tier = this.nextTier;
     this.nextTier = rollDropTier();
-    const root = this.drawCreature(0, 0, tier);
+    const root = drawCreature(this, 0, 0, tier);
     root.setAlpha(0.9);
     root.setScale(0.74);
     const r = radiusPx(tier);
@@ -245,7 +243,7 @@ export class LabScene extends Phaser.Scene {
       frictionAir: 0.012,
       label: `a${tier}`,
     });
-    const root = this.drawCreature(x, y, tier);
+    const root = drawCreature(this, x, y, tier);
     if (popIn) {
       root.setScale(0.38);
       this.tweens.add({
@@ -270,32 +268,6 @@ export class LabScene extends Phaser.Scene {
     this.pieces.push(piece);
     this.byBody.set(body, piece);
     return piece;
-  }
-
-  private drawCreature(x: number, y: number, tier: number): Phaser.GameObjects.Container {
-    const c = creature(tier);
-    const r = radiusPx(tier);
-    const key = bakeCreatureTexture(this, tier);
-    const root = this.add.container(x, y);
-    const glow = this.add.circle(0, 0, r * 1.12, c.color, 0.14);
-    const disc = this.add.image(0, 0, key).setDisplaySize((r + r * 0.2) * 2, (r + r * 0.2) * 2);
-    const emoji = this.add
-      .text(0, -r * 0.06, c.emoji, {
-        fontSize: `${Math.max(14, r * 0.9)}px`,
-        align: 'center',
-      })
-      .setOrigin(0.5);
-    const code = this.add
-      .text(0, r * 0.4, c.code, {
-        fontFamily: 'Outfit, ui-sans-serif, system-ui, sans-serif',
-        fontSize: `${Math.max(8, r * 0.28)}px`,
-        color: '#0B0B0C',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
-    root.add([glow, disc, emoji, code]);
-    root.setDepth(10);
-    return root;
   }
 
   private onCollide(event: { pairs: Array<{ bodyA: MatterJS.BodyType; bodyB: MatterJS.BodyType }> }): void {

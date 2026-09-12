@@ -72,7 +72,7 @@ button {
   margin: 0;
   font-size: 42px;
   font-weight: 800;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
 }
 
 .hero-sub {
@@ -228,20 +228,9 @@ button {
 .beaker {
   width: 16px;
   height: 16px;
-  border: 1.5px solid var(--accent);
-  border-top: 0;
-  border-radius: 0 0 5px 5px;
-  position: relative;
-}
-
-.beaker::before {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  height: 3px;
-  border-top: 1.5px solid var(--accent);
+  display: block;
+  color: var(--accent);
+  flex: 0 0 auto;
 }
 
 .hud-scores {
@@ -348,7 +337,7 @@ button {
 .panel h1 {
   margin: 8px 0 0;
   font-size: 42px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   color: var(--text);
 }
 
