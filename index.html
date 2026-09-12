@@ -12,24 +12,30 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <main class="shell">
-      <h1 class="logo">ALPHA-11</h1>
-      <p class="tag">Lab · merge</p>
-      <section class="cards">
-        <a class="card" href="/lab/">
-          <strong>LAB — merge · JUGAR</strong>
-          <span class="go">JUGAR</span>
-        </a>
-        <div class="card soon" aria-disabled="true">
-          <strong>PRÓXIMAMENTE</strong>
+      <h1 class="logo">ALPHA<span>-11</span></h1>
+      <section class="hero">
+        <h2>LAB</h2>
+        <p class="hero-sub">merge</p>
+        <a class="play" href="/lab/">JUGAR</a>
+      </section>
+      <section class="soon-row">
+        <div class="soon-card" aria-disabled="true">
+          <strong>JUMP</strong>
+          <span>PRÓXIMAMENTE</span>
         </div>
-        <div class="card soon" aria-disabled="true">
-          <strong>PRÓXIMAMENTE</strong>
+        <div class="soon-card" aria-disabled="true">
+          <strong>SHIFT</strong>
+          <span>PRÓXIMAMENTE</span>
         </div>
       </section>
+      <div class="canon-row" id="canon-row" aria-hidden="true"></div>
       <p class="foot">Gratis · Añade a inicio de pantalla</p>
     </main>
     <script type="module" src="/src/hub.ts"></script>

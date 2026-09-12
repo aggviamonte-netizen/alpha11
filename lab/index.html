@@ -12,30 +12,47 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body class="lab-body">
     <div class="stage">
       <header class="hud">
-        <div>
-          <div class="title">ALPHA-11 LAB</div>
-          <div class="next" id="next">Sigue</div>
+        <div class="hud-brand">
+          <span class="beaker" aria-hidden="true"></span>
+          <span>ALPHA-11 LAB</span>
         </div>
-        <div class="stats">
-          <div>Puntos <b id="score">0</b></div>
-          <div>Mejor <b id="best">0</b></div>
+        <div class="hud-scores">
+          <div>
+            <span class="lbl">SCORE</span>
+            <b id="score">0</b>
+          </div>
+          <div class="hud-split"></div>
+          <div>
+            <span class="lbl">BEST</span>
+            <b id="best">0</b>
+          </div>
+        </div>
+        <div class="hud-next">
+          <span class="lbl">NEXT</span>
+          <div class="next-chip" id="next-chip"></div>
+          <span class="next-code" id="next-code">A1</span>
         </div>
       </header>
       <div id="game"></div>
+      <p class="drop-hint" id="drop-hint" hidden>TOCA PARA SOLTAR</p>
       <div class="overlay" id="overlay-start">
-        <div class="panel">
-          <h1>ALPHA-11 LAB</h1>
-          <p class="toca">TOCA</p>
+        <div class="panel start-panel">
+          <p class="eyebrow">ALPHA-11</p>
+          <h1>LAB</h1>
+          <p class="toca">TOCA PARA SOLTAR</p>
         </div>
       </div>
       <div class="overlay" id="overlay-over" hidden>
-        <div class="panel">
-          <h1>ALPHA-11 LAB</h1>
+        <div class="panel over-panel">
+          <p class="eyebrow">ALPHA-11 LAB</p>
           <p class="fin">FIN</p>
           <p class="over-score" id="over-score"></p>
           <button type="button" id="retry">REINTENTAR</button>
