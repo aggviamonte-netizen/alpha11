@@ -1,5 +1,13 @@
-const CACHE = 'alpha11-v1';
-const SHELL = ['/', '/lab/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
+const CACHE = 'alpha11-v2';
+const SHELL = [
+  '/',
+  '/lab/',
+  '/jump/',
+  '/shift/',
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));

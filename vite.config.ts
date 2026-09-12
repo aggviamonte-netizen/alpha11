@@ -8,6 +8,8 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         lab: resolve(__dirname, 'lab/index.html'),
+        jump: resolve(__dirname, 'jump/index.html'),
+        shift: resolve(__dirname, 'shift/index.html'),
       },
     },
   },

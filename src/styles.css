@@ -218,7 +218,15 @@ button {
   color: var(--muted);
 }
 
-#retry {
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#retry,
+#keep {
   border: 0;
   border-radius: 999px;
   background: var(--accent);
@@ -226,4 +234,14 @@ button {
   padding: 12px 22px;
   font-weight: 800;
   letter-spacing: 0.08em;
+}
+
+#keep {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+#keep[hidden] {
+  display: none;
 }
