@@ -8,9 +8,9 @@ export const H = 844;
 const WALL = 16;
 const INNER_L = 26;
 const INNER_R = W - 26;
-const FLOOR_Y = 812;
-const DROP_Y = 122;
-const DANGER_Y = 172;
+const FLOOR_Y = 668;
+const DROP_Y = 188;
+const DANGER_Y = 236;
 const MERGE_MS = 200;
 const DANGER_MS = 1500;
 const COMBO_MS = 1000;
@@ -134,9 +134,11 @@ export class LabScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(0x0b0b0c, 1);
     g.fillRect(0, 0, W, H);
-    g.fillStyle(0xf4f1ea, 0.08);
-    g.fillRect(INNER_L - WALL, 96, WALL, FLOOR_Y - 96 + WALL);
-    g.fillRect(INNER_R, 96, WALL, FLOOR_Y - 96 + WALL);
+    g.fillStyle(0x101012, 1);
+    g.fillRect(INNER_L, DROP_Y - 24, INNER_R - INNER_L, FLOOR_Y - (DROP_Y - 24));
+    g.fillStyle(0xf4f1ea, 0.14);
+    g.fillRect(INNER_L - WALL, DROP_Y - 28, WALL, FLOOR_Y - (DROP_Y - 28) + WALL);
+    g.fillRect(INNER_R, DROP_Y - 28, WALL, FLOOR_Y - (DROP_Y - 28) + WALL);
     g.fillRect(INNER_L - WALL, FLOOR_Y, INNER_R - INNER_L + WALL * 2, WALL);
     g.lineStyle(1, 0xe8ff47, 0.5);
     for (let x = INNER_L; x < INNER_R; x += 10) {
@@ -235,13 +237,15 @@ export class LabScene extends Phaser.Scene {
 
   private tickMerges(now: number): void {
     const seen = new Set<string>();
-    const n = this.pieces.length;
-    for (let i = 0; i < n; i++) {
-      const a = this.pieces[i];
-      if (a.locked) continue;
-      for (let j = i + 1; j < n; j++) {
-        const b = this.pieces[j];
-        if (b.locked || a.tier !== b.tier) continue;
+    const ready: Array<[Piece, Piece]> = [];
+    const claimed = new Set<number>();
+    const list = this.pieces;
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      if (!a || a.locked || !a.body?.position) continue;
+      for (let j = i + 1; j < list.length; j++) {
+        const b = list[j];
+        if (!b || b.locked || a.tier !== b.tier || !b.body?.position) continue;
         const dx = a.body.position.x - b.body.position.x;
         const dy = a.body.position.y - b.body.position.y;
         const lim = a.radius + b.radius + 1.5;
@@ -250,12 +254,17 @@ export class LabScene extends Phaser.Scene {
         seen.add(key);
         const hit = this.contacts.get(key);
         if (!hit) this.contacts.set(key, { a: a.id, b: b.id, t: now });
-        else if (now - hit.t >= MERGE_MS) this.merge(a, b);
+        else if (now - hit.t >= MERGE_MS && !claimed.has(a.id) && !claimed.has(b.id)) {
+          claimed.add(a.id);
+          claimed.add(b.id);
+          ready.push([a, b]);
+        }
       }
     }
     for (const key of [...this.contacts.keys()]) {
       if (!seen.has(key)) this.contacts.delete(key);
     }
+    for (const [a, b] of ready) this.merge(a, b);
   }
 
   private merge(a: Piece, b: Piece): void {

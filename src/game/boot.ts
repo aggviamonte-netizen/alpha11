@@ -18,6 +18,7 @@ export function startLab(parent: string | HTMLElement): Phaser.Game {
       matter: {
         gravity: { x: 0, y: 1.55 },
         enableSleeping: true,
+        debug: false,
       },
     },
     scene: LabScene,
