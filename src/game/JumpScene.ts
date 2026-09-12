@@ -8,13 +8,13 @@ export const W = 390;
 export const H = 844;
 
 const PX = 96;
-const GRAVITY = 1680;
-const FLAP = -430;
-const MAX_FALL = 760;
-const RAIL = 36;
-const PIPE_W = 56;
-const INTERVAL = 248;
-const HIT = 0.7;
+const GRAVITY = 1280;
+const FLAP = -390;
+const MAX_FALL = 620;
+const RAIL = 40;
+const PIPE_W = 68;
+const INTERVAL = 268;
+const HIT = 0.66;
 
 type Phase = 'start' | 'play' | 'over';
 
@@ -49,7 +49,7 @@ export class JumpScene extends Phaser.Scene {
   private glow!: Phaser.GameObjects.Arc;
   private gates: Gate[] = [];
   private motes: Mote[] = [];
-  private racks: Phaser.GameObjects.Rectangle[] = [];
+  private racks: Phaser.GameObjects.Shape[] = [];
   private pulse = 0;
   private lastTrail = 0;
 
@@ -159,14 +159,15 @@ export class JumpScene extends Phaser.Scene {
   }
 
   private gapSize(): number {
-    return 224 - Math.min(78, this.score * 1.45);
+    return 236 - Math.min(70, this.score * 1.15);
   }
 
   private paintWorld(): void {
     this.add.rectangle(W / 2, H / 2, W, H, 0x0b0b0c).setDepth(0);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x10141c, 0.55).setDepth(0);
 
     const grid = this.add.graphics().setDepth(1);
-    grid.lineStyle(1, 0xf4f1ea, 0.045);
+    grid.lineStyle(1, 0xf4f1ea, 0.07);
     for (let x = 0; x <= W; x += 26) {
       grid.lineBetween(x, 0, x, H);
     }
@@ -174,41 +175,50 @@ export class JumpScene extends Phaser.Scene {
       grid.lineBetween(0, y, W, y);
     }
 
-    for (let i = 0; i < 7; i++) {
-      const x = 20 + i * 62;
-      const h = 90 + (i % 3) * 50;
-      const y = i % 2 === 0 ? 90 + h / 2 : H - 90 - h / 2;
-      const rack = this.add.rectangle(x, y, 18, h, 0x12141a, 0.9).setDepth(2);
-      rack.setStrokeStyle(1, 0x6ee7ff, 0.12);
+    const wash = this.add.graphics().setDepth(1);
+    wash.fillStyle(0x6ee7ff, 0.04);
+    wash.fillRect(0, 120, W, 80);
+    wash.fillStyle(0xff8bd1, 0.035);
+    wash.fillRect(0, 620, W, 70);
+
+    const colors = [0x8b9bff, 0x6ee7ff, 0xff8bd1, 0xe8ff47];
+    for (let i = 0; i < 8; i++) {
+      const x = 18 + i * 52;
+      const h = 110 + (i % 3) * 64;
+      const y = i % 2 === 0 ? 96 + h / 2 : H - 96 - h / 2;
+      const rack = this.add.rectangle(x, y, 22, h, 0x161920, 0.95).setDepth(2);
+      rack.setStrokeStyle(1, colors[i % colors.length], 0.28);
       this.racks.push(rack);
+      const flask = this.add.circle(x, y, 7, colors[i % colors.length], 0.35).setDepth(2);
+      this.racks.push(flask);
     }
 
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 16; i++) {
       const mote = this.add.circle(
         Math.random() * W,
         Math.random() * H,
-        1.2 + Math.random() * 1.6,
-        0xe8ff47,
-        0.18 + Math.random() * 0.25,
+        1.4 + Math.random() * 2,
+        i % 2 === 0 ? 0xe8ff47 : 0x6ee7ff,
+        0.22 + Math.random() * 0.3,
       );
       mote.setDepth(3);
       this.motes.push({ g: mote, vx: 18 + Math.random() * 36 });
     }
 
     const rails = this.add.graphics().setDepth(8);
-    rails.fillStyle(0x101218, 1);
+    rails.fillStyle(0x141820, 1);
     rails.fillRect(0, 0, W, RAIL);
     rails.fillRect(0, H - RAIL, W, RAIL);
-    rails.fillStyle(0xf4f1ea, 0.12);
-    rails.fillRect(0, RAIL - 3, W, 3);
-    rails.fillRect(0, H - RAIL, W, 3);
-    rails.lineStyle(1, 0xe8ff47, 0.55);
+    rails.fillStyle(0xf4f1ea, 0.16);
+    rails.fillRect(0, RAIL - 4, W, 4);
+    rails.fillRect(0, H - RAIL, W, 4);
+    rails.lineStyle(2, 0xe8ff47, 0.7);
     for (let x = 0; x < W; x += 12) {
-      rails.lineBetween(x, RAIL - 1, Math.min(x + 7, W), RAIL - 1);
-      rails.lineBetween(x, H - RAIL + 1, Math.min(x + 7, W), H - RAIL + 1);
+      rails.lineBetween(x, RAIL - 2, Math.min(x + 7, W), RAIL - 2);
+      rails.lineBetween(x, H - RAIL + 2, Math.min(x + 7, W), H - RAIL + 2);
     }
 
-    for (let i = 0; i < 4; i++) this.spawnGate(W + 70 + i * INTERVAL);
+    for (let i = 0; i < 4; i++) this.spawnGate(W + 90 + i * INTERVAL);
   }
 
   private spawnGate(x: number): void {
@@ -234,31 +244,32 @@ export class JumpScene extends Phaser.Scene {
   ): Phaser.GameObjects.Container {
     const col = this.add.container(x, y);
     const g = this.add.graphics();
-    g.fillStyle(0x141820, 0.96);
-    g.fillRoundedRect(-w / 2, -h / 2, w, h, 7);
-    g.fillStyle(0x6ee7ff, 0.07);
-    g.fillRoundedRect(-w / 2 + 5, -h / 2 + 6, w * 0.34, Math.max(12, h - 12), 4);
-    g.lineStyle(2, 0xf4f1ea, 0.3);
-    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 7);
+    g.fillStyle(0x1a222c, 0.97);
+    g.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
+    g.fillStyle(0x6ee7ff, 0.1);
+    g.fillRoundedRect(-w / 2 + 6, -h / 2 + 7, w * 0.36, Math.max(12, h - 14), 5);
+    g.lineStyle(2, 0xf4f1ea, 0.55);
+    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
 
-    const step = 34;
+    const step = 32;
     const n = Math.max(1, Math.floor(h / step));
+    const vial = [0x7cffb2, 0x8b9bff, 0xff8bd1, 0xe8ff47, 0x6ee7ff];
     for (let i = 0; i < n; i++) {
       const vy = -h / 2 + 18 + i * step;
-      if (vy > h / 2 - 16) continue;
-      g.fillStyle(i % 2 === 0 ? 0x8b9bff : 0xff8bd1, 0.16);
-      g.fillCircle(0, vy, 10);
-      g.lineStyle(1, 0xf4f1ea, 0.22);
-      g.strokeCircle(0, vy, 10);
-      g.fillStyle(0xe8ff47, 0.12);
-      g.fillCircle(-3, vy - 3, 3);
+      if (vy > h / 2 - 18) continue;
+      g.fillStyle(vial[i % vial.length], 0.38);
+      g.fillRoundedRect(-12, vy - 11, 24, 22, 8);
+      g.lineStyle(1, 0xf4f1ea, 0.4);
+      g.strokeRoundedRect(-12, vy - 11, 24, 22, 8);
+      g.fillStyle(0xffffff, 0.16);
+      g.fillCircle(-5, vy - 4, 3);
     }
 
-    const lipY = lip === 'bottom' ? h / 2 - 5 : -h / 2 + 5;
-    g.fillStyle(0xe8ff47, 0.9);
-    g.fillRoundedRect(-w / 2 - 3, lipY - 4, w + 6, 8, 3);
-    g.fillStyle(0xe8ff47, 0.18);
-    g.fillRoundedRect(-w / 2 - 8, lipY - 10, w + 16, 20, 8);
+    const lipY = lip === 'bottom' ? h / 2 - 6 : -h / 2 + 6;
+    g.fillStyle(0xe8ff47, 0.95);
+    g.fillRoundedRect(-w / 2 - 4, lipY - 5, w + 8, 10, 4);
+    g.fillStyle(0xe8ff47, 0.22);
+    g.fillRoundedRect(-w / 2 - 10, lipY - 12, w + 20, 24, 10);
     col.add(g);
     return col;
   }

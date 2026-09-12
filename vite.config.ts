@@ -1,8 +1,35 @@
 import { resolve } from 'node:path';
+import type { Connect, Plugin } from 'vite';
 import { defineConfig } from 'vite';
+
+const PAGES = ['/lab', '/jump', '/shift'];
+
+function rewritePages(): Connect.NextHandleFunction {
+  return (req, _res, next) => {
+    const raw = req.url ?? '';
+    const q = raw.indexOf('?');
+    const path = q === -1 ? raw : raw.slice(0, q);
+    const qs = q === -1 ? '' : raw.slice(q);
+    if (PAGES.includes(path)) req.url = `${path}/${qs}`;
+    next();
+  };
+}
+
+function mpaPages(): Plugin {
+  return {
+    name: 'alpha11-mpa-pages',
+    configureServer(server) {
+      server.middlewares.use(rewritePages());
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(rewritePages());
+    },
+  };
+}
 
 export default defineConfig({
   base: '/',
+  plugins: [mpaPages()],
   build: {
     rollupOptions: {
       input: {

@@ -138,18 +138,18 @@ export class ShiftScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(0x101012, 1);
     g.fillRoundedRect(ORIGIN_X - 14, ORIGIN_Y - 14, BOARD + 28, BOARD + 28, 22);
-    g.lineStyle(2, 0xe8ff47, 0.42);
+    g.lineStyle(2, 0xe8ff47, 0.55);
     g.strokeRoundedRect(ORIGIN_X - 14, ORIGIN_Y - 14, BOARD + 28, BOARD + 28, 22);
-    g.lineStyle(1, 0xf4f1ea, 0.08);
+    g.lineStyle(1, 0xf4f1ea, 0.14);
     g.strokeRoundedRect(ORIGIN_X - 8, ORIGIN_Y - 8, BOARD + 16, BOARD + 16, 18);
 
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
         const x = ORIGIN_X + c * (CELL + GAP);
         const y = ORIGIN_Y + r * (CELL + GAP);
-        g.fillStyle(0x121214, 1);
+        g.fillStyle(0x1a1a1f, 1);
         g.fillRoundedRect(x, y, CELL, CELL, 16);
-        g.lineStyle(1, 0xf4f1ea, 0.06);
+        g.lineStyle(1, 0xf4f1ea, 0.12);
         g.strokeRoundedRect(x, y, CELL, CELL, 16);
       }
     }
