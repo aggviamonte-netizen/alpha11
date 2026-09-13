@@ -3,7 +3,7 @@ import type { Connect, Plugin } from 'vite';
 import { defineConfig } from 'vite';
 import { partnersApiMock } from './worker/dev/vite-api';
 
-const PAGES = ['/lab', '/jump', '/shift', '/rush', '/sniper'];
+const PAGES = ['/lab', '/jump', '/shift', '/rush', '/kick', '/sniper'];
 
 function rewritePages(): Connect.NextHandleFunction {
   return (req, _res, next) => {
@@ -39,6 +39,7 @@ export default defineConfig({
         jump: resolve(__dirname, 'jump/index.html'),
         shift: resolve(__dirname, 'shift/index.html'),
         rush: resolve(__dirname, 'rush/index.html'),
+        kick: resolve(__dirname, 'kick/index.html'),
         sniper: resolve(__dirname, 'sniper/index.html'),
       },
     },
