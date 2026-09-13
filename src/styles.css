@@ -155,6 +155,30 @@ button {
   background: rgba(244, 241, 234, 0.28);
 }
 
+.soon-card.playable {
+  pointer-events: auto;
+  user-select: auto;
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(244, 241, 234, 0.04);
+}
+
+.soon-card.playable strong {
+  color: var(--text);
+}
+
+.soon-card.playable span {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.soon-card.playable span::before {
+  background: var(--accent);
+}
+
+.soon-card.playable:active {
+  transform: scale(0.98);
+}
+
 .canon-row {
   display: flex;
   gap: 10px;
@@ -213,6 +237,32 @@ button {
   align-items: center;
   gap: 8px;
   pointer-events: none;
+}
+
+.hud.hud-simple {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hud .title {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  font-weight: 750;
+  color: var(--accent);
+}
+
+.hud .stats {
+  text-align: right;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.hud .next {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text);
 }
 
 .hud-brand {
@@ -362,7 +412,15 @@ button {
   color: var(--muted);
 }
 
-#retry {
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#retry,
+#keep {
   border: 0;
   border-radius: 999px;
   background: var(--accent);
@@ -370,4 +428,14 @@ button {
   padding: 12px 26px;
   font-weight: 800;
   letter-spacing: 0.1em;
+}
+
+#keep {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+#keep[hidden] {
+  display: none;
 }
