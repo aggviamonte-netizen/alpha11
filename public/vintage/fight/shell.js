@@ -1,16 +1,52 @@
-/* Hub wrapper: size the 2:1 playfield and synthesize stickfighter keys. */
+/* Hub wrapper: landscape fullscreen + overlay pad. Does not letterbox the stage. */
 (function () {
-  const BASE_WIDTH = 800;
-  const BASE_HEIGHT = 400;
-  const RATIO = BASE_WIDTH / BASE_HEIGHT;
-
   const canvas = document.getElementById('gameCanvas');
-  const play = document.querySelector('.fight-play');
-  const box = document.getElementById('game-container');
+  const rotate = document.getElementById('fight-rotate');
   const held = new Map();
 
   function playing() {
     return document.querySelector('.pause-instruction')?.classList.contains('show');
+  }
+
+  function isPhonePortrait() {
+    const coarse = window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches;
+    const narrow = Math.min(window.innerWidth, window.innerHeight) <= 900;
+    const portrait = window.innerHeight > window.innerWidth;
+    return portrait && (coarse || narrow);
+  }
+
+  function syncOrientationGate() {
+    const block = isPhonePortrait();
+    document.documentElement.classList.toggle('fight-portrait', block);
+    document.documentElement.classList.toggle('fight-landscape', !block);
+    if (rotate) rotate.setAttribute('aria-hidden', block ? 'false' : 'true');
+  }
+
+  function refit() {
+    if (typeof resizeCanvas === 'function') resizeCanvas();
+  }
+
+  async function goFullscreenLandscape() {
+    const root = document.documentElement;
+    try {
+      const fs = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!fs) {
+        const req = root.requestFullscreen || root.webkitRequestFullscreen;
+        if (req) await req.call(root);
+      }
+    } catch (_err) {
+      /* iOS Safari and some embeds reject Fullscreen */
+    }
+    try {
+      if (screen.orientation && typeof screen.orientation.lock === 'function') {
+        await screen.orientation.lock('landscape');
+      }
+    } catch (_err) {
+      /* lock usually needs fullscreen + user gesture */
+    }
+    syncOrientationGate();
+    refit();
+    requestAnimationFrame(refit);
   }
 
   function sendKey(key, type) {
@@ -25,7 +61,10 @@
 
   function pressPad(key, type, latch) {
     if (!playing() && key !== 'Escape') {
-      if (type === 'keydown') sendKey('Enter', 'keydown');
+      if (type === 'keydown') {
+        sendKey('Enter', 'keydown');
+        canvas?.click();
+      }
       return;
     }
     if (!latch && type === 'keydown') {
@@ -36,51 +75,10 @@
     sendKey(key, type);
   }
 
-  function fitCanvas() {
-    if (!canvas || !play) return;
-    const availW = play.clientWidth;
-    const availH = play.clientHeight;
-    if (availW < 2 || availH < 2) return;
-
-    let width = availW;
-    let height = width / RATIO;
-    if (height > availH) {
-      height = availH;
-      width = height * RATIO;
-    }
-
-    const pxW = Math.max(2, Math.floor(width));
-    const pxH = Math.max(2, Math.floor(height));
-
-    if (box) {
-      box.style.width = `${pxW}px`;
-      box.style.height = `${pxH}px`;
-      box.style.maxWidth = '100%';
-      box.style.maxHeight = '100%';
-      box.style.aspectRatio = 'auto';
-    }
-
-    canvas.width = BASE_WIDTH;
-    canvas.height = BASE_HEIGHT;
-    canvas.style.width = `${pxW}px`;
-    canvas.style.height = `${pxH}px`;
-  }
-
-  window.resizeCanvas = fitCanvas;
-
-  window.addEventListener('resize', () => {
-    fitCanvas();
-    requestAnimationFrame(fitCanvas);
-  });
-  window.addEventListener('orientationchange', () => setTimeout(fitCanvas, 120));
-  window.visualViewport?.addEventListener('resize', fitCanvas);
-  if (typeof ResizeObserver === 'function' && play) {
-    new ResizeObserver(fitCanvas).observe(play);
-  }
-
   function bindHold(el, key, latch) {
     const down = (event) => {
       event.preventDefault();
+      event.stopPropagation();
       if (event.button != null && event.button !== 0) return;
       try {
         el.setPointerCapture(event.pointerId);
@@ -122,6 +120,23 @@
     event.preventDefault();
     sendKey('Escape', 'keydown');
   });
+
+  document.querySelectorAll('[data-fullscreen]').forEach((el) => {
+    el.addEventListener('click', (event) => {
+      event.preventDefault();
+      goFullscreenLandscape();
+    });
+  });
+
+  function onFirstPlayGesture(event) {
+    if (event.target.closest && event.target.closest('a.fight-back')) return;
+    document.removeEventListener('pointerdown', onFirstPlayGesture, true);
+    const phone =
+      window.matchMedia('(pointer: coarse)').matches ||
+      Math.min(window.innerWidth, window.innerHeight) <= 900;
+    if (phone) goFullscreenLandscape();
+  }
+  document.addEventListener('pointerdown', onFirstPlayGesture, { capture: true });
 
   let drag = null;
   let moveKey = null;
@@ -189,6 +204,21 @@
     }
   });
 
-  fitCanvas();
-  requestAnimationFrame(fitCanvas);
+  window.addEventListener('resize', syncOrientationGate);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      syncOrientationGate();
+      refit();
+    }, 120);
+  });
+  window.visualViewport?.addEventListener('resize', () => {
+    syncOrientationGate();
+    refit();
+  });
+  document.addEventListener('fullscreenchange', refit);
+  document.addEventListener('webkitfullscreenchange', refit);
+
+  syncOrientationGate();
+  refit();
+  requestAnimationFrame(refit);
 })();

@@ -1,4 +1,4 @@
-const CACHE = 'alpha11-v7';
+const CACHE = 'alpha11-v8';
 const SHELL = [
   '/',
   '/lab/',

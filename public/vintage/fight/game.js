@@ -1,7 +1,9 @@
 // Game constants
-const ASPECT_RATIO = 2; // width/height ratio
+// Combat math stays in the vendored 800×400 space. ASPECT_RATIO tracks the
+// live landscape viewport so the stage can stretch to fill — no 2:1 letterbox.
 const BASE_WIDTH = 800;
 const BASE_HEIGHT = 400;
+let ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT;
 const GRAVITY = 0.5;
 const JUMP_FORCE = -12;
 const MOVE_SPEED = 5;
@@ -18,43 +20,45 @@ const ctx = canvas.getContext('2d');
 let scaleX = 1;
 let scaleY = 1;
 
-// Resize function
-function resizeCanvas() {
+function viewportSize() {
     const container = document.getElementById('game-container');
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    
-    // Calculate new dimensions maintaining aspect ratio
-    let newWidth = containerWidth;
-    let newHeight = newWidth / ASPECT_RATIO;
-    
-    // If height is too big, scale based on height instead
-    if (newHeight > window.innerHeight * 0.9) {
-        newHeight = window.innerHeight * 0.9;
-        newWidth = newHeight * ASPECT_RATIO;
-    }
-    
-    // Update canvas size
+    const vv = window.visualViewport;
+    const fallbackW = vv && vv.width ? vv.width : window.innerWidth;
+    const fallbackH = vv && vv.height ? vv.height : window.innerHeight;
+    const cssW = container && container.clientWidth > 1 ? container.clientWidth : fallbackW;
+    const cssH = container && container.clientHeight > 1 ? container.clientHeight : fallbackH;
+    return {
+        width: Math.max(2, Math.floor(cssW)),
+        height: Math.max(2, Math.floor(cssH)),
+    };
+}
+
+// Fill the shell (100vw×100vh). Do not letterbox to 2:1 or cap at 90% height.
+function resizeCanvas() {
+    const { width: newWidth, height: newHeight } = viewportSize();
+
+    ASPECT_RATIO = newWidth / newHeight;
+
     canvas.width = BASE_WIDTH;
     canvas.height = BASE_HEIGHT;
-    
-    // Calculate scale factors
+
     scaleX = newWidth / BASE_WIDTH;
     scaleY = newHeight / BASE_HEIGHT;
-    
-    // Update game constants
+
     CANVAS_WIDTH = BASE_WIDTH;
     CANVAS_HEIGHT = BASE_HEIGHT;
     GROUND_Y = CANVAS_HEIGHT - 50;
-    
-    // Set canvas CSS size
+
     canvas.style.width = `${newWidth}px`;
     canvas.style.height = `${newHeight}px`;
 }
 
-// Add resize listener
 window.addEventListener('resize', resizeCanvas);
-resizeCanvas(); // Initial resize
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 80));
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resizeCanvas);
+}
+resizeCanvas();
 
 // Convert screen coordinates to game coordinates
 function screenToGameX(x) {
