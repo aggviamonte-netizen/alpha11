@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
     <meta name="theme-color" content="#0B0B0C">
     <meta name="google" content="notranslate">
-    <meta name="description" content="ALPHA-11 FIGHT — pelea de palitos">
+    <meta name="description" content="ALPHA-11 FIGHT — pelea de palitos a pantalla completa">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ALPHA-11 FIGHT">
+    <meta name="screen-orientation" content="landscape">
     <title>ALPHA-11 FIGHT</title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/icons/icon-192.png" type="image/png">
@@ -20,6 +22,76 @@
 </head>
 <body class="fight-body">
     <div class="fight-shell">
+        <div class="game-wrapper">
+            <div class="controls-panel hide-during-start fight-sr" id="player1-controls">
+                <h3>Player 1 Controls</h3>
+                <ul class="controls-list">
+                    <li><span class="key">W</span> Jump</li>
+                    <li><span class="key">A</span> Move Left</li>
+                    <li><span class="key">S</span> Duck</li>
+                    <li><span class="key">D</span> Move Right</li>
+                    <li><span class="key">Z</span> Punch</li>
+                    <li><span class="key">X</span> Kick</li>
+                    <li><span class="key">C</span> Fireball</li>
+                </ul>
+            </div>
+
+            <div id="game-container">
+                <h1 class="game-title hide-during-start fight-sr">FIGHT</h1>
+                <div class="game-content">
+                    <div class="overlay-backdrop" id="menu-backdrop"></div>
+                    <div id="menu-overlay">
+                        <div class="mode-buttons">
+                            <button class="menu-button" id="singleplayer">Un jugador</button>
+                            <button class="menu-button" id="multiplayer">Dos jugadores</button>
+                        </div>
+
+                        <div id="single-player-inputs" class="input-group">
+                            <div class="input-label">Tu nombre:</div>
+                            <input type="text" id="player1-name-single" class="player-name-input" placeholder="Jugador 1" maxlength="12" enterkeyhint="done">
+                            <button class="menu-button" id="start-single">Empezar</button>
+                            <button class="menu-button back-button" id="back-single">Atrás</button>
+                        </div>
+
+                        <div id="multiplayer-inputs" class="input-group">
+                            <div class="input-label">Nombres:</div>
+                            <input type="text" id="player1-name-multi" class="player-name-input" placeholder="Jugador 1" maxlength="12" enterkeyhint="next">
+                            <input type="text" id="player2-name-multi" class="player-name-input" placeholder="Jugador 2" maxlength="12" enterkeyhint="done">
+                            <button class="menu-button" id="start-multi">Empezar</button>
+                            <button class="menu-button back-button" id="back-multi">Atrás</button>
+                        </div>
+                    </div>
+                    <div class="overlay-backdrop" id="pause-backdrop"></div>
+                    <div id="pause-menu">
+                        <h2 class="pause-title">Pausa</h2>
+                        <button class="menu-button" id="resume">Seguir</button>
+                        <button class="menu-button" id="exit">Menú</button>
+                    </div>
+                    <div class="overlay-backdrop" id="game-over-backdrop"></div>
+                    <div id="game-over-menu" class="menu">
+                        <h2 id="winner-message">Jugador 1 gana</h2>
+                        <button id="play-again" class="menu-button">Otra vez</button>
+                        <button id="exit-to-menu" class="menu-button">Menú</button>
+                    </div>
+                    <canvas id="gameCanvas" width="800" height="400"></canvas>
+                    <div class="pause-instruction">Press Esc to pause</div>
+                </div>
+            </div>
+
+            <div class="controls-panel hide-during-start fight-sr" id="player2-controls">
+                <h3>Player 2 Controls</h3>
+                <ul class="controls-list">
+                    <li><span class="key">↑</span> Jump</li>
+                    <li><span class="key">←</span> Move Left</li>
+                    <li><span class="key">↓</span> Duck</li>
+                    <li><span class="key">→</span> Move Right</li>
+                    <li><span class="key">,</span> Punch</li>
+                    <li><span class="key">.</span> Kick</li>
+                    <li><span class="key">/</span> Fireball</li>
+                </ul>
+            </div>
+        </div>
+
         <header class="fight-hud">
             <a class="fight-back" href="/">← HUB</a>
             <div class="fight-brand">
@@ -29,80 +101,11 @@
                 </svg>
                 <span>ALPHA-11 FIGHT</span>
             </div>
-            <button type="button" class="fight-pause" data-pause>PAUSA</button>
-        </header>
-
-        <div class="fight-play">
-            <div class="game-wrapper">
-                <div class="controls-panel hide-during-start" id="player1-controls">
-                    <h3>Player 1 Controls</h3>
-                    <ul class="controls-list">
-                        <li><span class="key">W</span> Jump</li>
-                        <li><span class="key">A</span> Move Left</li>
-                        <li><span class="key">S</span> Duck</li>
-                        <li><span class="key">D</span> Move Right</li>
-                        <li><span class="key">Z</span> Punch</li>
-                        <li><span class="key">X</span> Kick</li>
-                        <li><span class="key">C</span> Fireball</li>
-                    </ul>
-                </div>
-
-                <div id="game-container">
-                    <h1 class="game-title hide-during-start">FIGHT</h1>
-                    <div class="game-content">
-                        <div class="overlay-backdrop" id="menu-backdrop"></div>
-                        <div id="menu-overlay">
-                            <div class="mode-buttons">
-                                <button class="menu-button" id="singleplayer">Un jugador</button>
-                                <button class="menu-button" id="multiplayer">Dos jugadores</button>
-                            </div>
-
-                            <div id="single-player-inputs" class="input-group">
-                                <div class="input-label">Tu nombre:</div>
-                                <input type="text" id="player1-name-single" class="player-name-input" placeholder="Jugador 1" maxlength="12" enterkeyhint="done">
-                                <button class="menu-button" id="start-single">Empezar</button>
-                                <button class="menu-button back-button" id="back-single">Atrás</button>
-                            </div>
-
-                            <div id="multiplayer-inputs" class="input-group">
-                                <div class="input-label">Nombres:</div>
-                                <input type="text" id="player1-name-multi" class="player-name-input" placeholder="Jugador 1" maxlength="12" enterkeyhint="next">
-                                <input type="text" id="player2-name-multi" class="player-name-input" placeholder="Jugador 2" maxlength="12" enterkeyhint="done">
-                                <button class="menu-button" id="start-multi">Empezar</button>
-                                <button class="menu-button back-button" id="back-multi">Atrás</button>
-                            </div>
-                        </div>
-                        <div class="overlay-backdrop" id="pause-backdrop"></div>
-                        <div id="pause-menu">
-                            <h2 class="pause-title">Pausa</h2>
-                            <button class="menu-button" id="resume">Seguir</button>
-                            <button class="menu-button" id="exit">Menú</button>
-                        </div>
-                        <div class="overlay-backdrop" id="game-over-backdrop"></div>
-                        <div id="game-over-menu" class="menu">
-                            <h2 id="winner-message">Jugador 1 gana</h2>
-                            <button id="play-again" class="menu-button">Otra vez</button>
-                            <button id="exit-to-menu" class="menu-button">Menú</button>
-                        </div>
-                        <canvas id="gameCanvas" width="800" height="400"></canvas>
-                        <div class="pause-instruction">Press Esc to pause</div>
-                    </div>
-                </div>
-
-                <div class="controls-panel hide-during-start" id="player2-controls">
-                    <h3>Player 2 Controls</h3>
-                    <ul class="controls-list">
-                        <li><span class="key">↑</span> Jump</li>
-                        <li><span class="key">←</span> Move Left</li>
-                        <li><span class="key">↓</span> Duck</li>
-                        <li><span class="key">→</span> Move Right</li>
-                        <li><span class="key">,</span> Punch</li>
-                        <li><span class="key">.</span> Kick</li>
-                        <li><span class="key">/</span> Fireball</li>
-                    </ul>
-                </div>
+            <div class="fight-hud-actions">
+                <button type="button" class="fight-fs" data-fullscreen>PANTALLA</button>
+                <button type="button" class="fight-pause" data-pause>PAUSA</button>
             </div>
-        </div>
+        </header>
 
         <div class="fight-pad" aria-label="Mandos táctiles">
             <div class="fight-cluster fight-cluster-move">
@@ -116,7 +119,15 @@
                 <button type="button" class="fight-key fight-key-acc" data-key="x">PATADA</button>
                 <button type="button" class="fight-key fight-key-fire" data-key="c">BOLA</button>
             </div>
-            <p class="fight-hint">TOCA EL LIENZO · ARRASTRA PARA ANDAR</p>
+        </div>
+
+        <div class="fight-rotate" id="fight-rotate" aria-hidden="true">
+            <div class="fight-rotate-card">
+                <div class="fight-phone" aria-hidden="true"></div>
+                <p class="fight-rotate-title">GIRA EL TELÉFONO</p>
+                <p class="fight-rotate-copy">FIGHT se juega a pantalla completa en horizontal. Sin barras, sin paneles.</p>
+                <button type="button" class="fight-rotate-btn" data-fullscreen>Pantalla completa</button>
+            </div>
         </div>
     </div>
     <script src="game.js"></script>
