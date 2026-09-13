@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { creature, radiusPx } from './canon';
 import { el } from './dom';
-import { drawCreature } from './drawCreature';
+import { burstDots, pulseRing, screenWash, squashTo } from './juice';
 import { loadJumpBest, saveJumpBest } from './jumpScore';
+import { sfxGate, sfxJump, sfxLand, sfxOver, unlockSfx } from './sfx';
+import { drawCreature, paintLabBackdrop } from './sprites';
 
 export const W = 390;
 export const H = 844;
@@ -47,11 +49,14 @@ export class JumpScene extends Phaser.Scene {
   private traveled = 0;
   private player!: Phaser.GameObjects.Container;
   private glow!: Phaser.GameObjects.Arc;
+  private shadow!: Phaser.GameObjects.Ellipse;
   private gates: Gate[] = [];
   private motes: Mote[] = [];
-  private racks: Phaser.GameObjects.Shape[] = [];
+  private racks: Array<{ x: number }> = [];
   private pulse = 0;
   private lastTrail = 0;
+  private frozenUntil = 0;
+  private flapping = false;
 
   constructor() {
     super('jump');
@@ -69,14 +74,18 @@ export class JumpScene extends Phaser.Scene {
     this.racks = [];
     this.pulse = 0;
     this.lastTrail = 0;
+    this.frozenUntil = 0;
+    this.flapping = false;
 
     this.paintWorld();
-    this.player = drawCreature(this, PX, this.py, 5, 1);
+    this.shadow = this.add.ellipse(PX, this.py + radiusPx(5) * 0.86, 28, 10, 0x000000, 0.22).setDepth(18);
+    this.player = drawCreature(this, PX, this.py, 5);
     this.player.setDepth(20);
-    this.glow = this.add.circle(PX, this.py, radiusPx(5) * 1.45, creature(5).color, 0.2);
+    this.glow = this.add.circle(PX, this.py, radiusPx(5) * 1.5, creature(5).color, 0.18);
     this.glow.setDepth(19);
 
     this.input.on('pointerdown', () => {
+      unlockSfx();
       if (this.phase === 'play') this.flap();
     });
 
@@ -102,9 +111,18 @@ export class JumpScene extends Phaser.Scene {
     this.tickDecor(s);
 
     if (this.phase !== 'play') {
-      this.player.setPosition(PX, this.py + Math.sin(this.pulse * 2.4) * 5);
-      this.glow.setPosition(PX, this.player.y);
+      const y = this.py + Math.sin(this.pulse * 2.4) * 5;
+      this.player.setPosition(PX, y);
+      this.glow.setPosition(PX, y);
       this.glow.setAlpha(0.16 + Math.sin(this.pulse * 3) * 0.05);
+      this.shadow.setPosition(PX, y + radiusPx(5) * 0.86);
+      return;
+    }
+
+    if (this.time.now < this.frozenUntil) {
+      this.player.setPosition(PX, this.py);
+      this.glow.setPosition(PX, this.py);
+      this.shadow.setPosition(PX, this.py + radiusPx(5) * 0.86);
       return;
     }
 
@@ -112,8 +130,14 @@ export class JumpScene extends Phaser.Scene {
     this.py += this.vy * s;
     this.player.setPosition(PX, this.py);
     this.player.setRotation(Phaser.Math.Clamp(this.vy / 980, -0.5, 0.72));
+    if (!this.flapping) {
+      const t = Phaser.Math.Clamp(this.vy / MAX_FALL, -0.75, 1);
+      this.player.setScale(1 - t * 0.1, 1 + t * 0.13);
+    }
     this.glow.setPosition(PX, this.py);
-    this.glow.setAlpha(0.2 + Math.max(0, -this.vy) / 1800);
+    this.glow.setAlpha(0.18 + Math.max(0, -this.vy) / 1800);
+    this.shadow.setPosition(PX, this.py + radiusPx(5) * 0.86);
+    this.shadow.setAlpha(0.12 + Math.max(0, this.vy) / 2800);
 
     const speed = this.scrollSpeed();
     this.traveled += speed * s;
@@ -128,6 +152,8 @@ export class JumpScene extends Phaser.Scene {
       gate.root.setX(gate.x);
       if (!gate.scored && gate.x + PIPE_W / 2 < PX) {
         gate.scored = true;
+        pulseRing(this, PX + 8, this.py, 0xe8ff47, 8, 1.8);
+        sfxGate();
       }
     }
 
@@ -139,6 +165,7 @@ export class JumpScene extends Phaser.Scene {
 
   private beginPlay(): void {
     if (this.phase === 'play') return;
+    unlockSfx();
     el('overlay-start').hidden = true;
     el('overlay-start').onclick = null;
     this.phase = 'play';
@@ -151,7 +178,29 @@ export class JumpScene extends Phaser.Scene {
   private flap(): void {
     if (this.phase !== 'play') return;
     this.vy = FLAP;
-    this.burst(PX, this.py, creature(5).color);
+    sfxJump();
+    this.flapping = true;
+    this.tweens.killTweensOf(this.player);
+    this.player.setScale(1.18, 0.7);
+    this.tweens.add({
+      targets: this.player,
+      scaleX: 0.86,
+      scaleY: 1.2,
+      duration: 70,
+      onComplete: () => {
+        this.tweens.add({
+          targets: this.player,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 130,
+          ease: 'Sine.out',
+          onComplete: () => {
+            this.flapping = false;
+          },
+        });
+      },
+    });
+    burstDots(this, PX, this.py + 10, creature(5).color, 7);
   }
 
   private scrollSpeed(): number {
@@ -163,56 +212,54 @@ export class JumpScene extends Phaser.Scene {
   }
 
   private paintWorld(): void {
-    this.add.rectangle(W / 2, H / 2, W, H, 0x0b0b0c).setDepth(0);
-    this.add.rectangle(W / 2, H / 2, W, H, 0x10141c, 0.55).setDepth(0);
+    paintLabBackdrop(this);
+    const wash = this.add.graphics().setDepth(0);
+    wash.fillStyle(0x10141c, 0.72);
+    wash.fillRect(0, 0, W, H);
+    wash.fillStyle(0x6ee7ff, 0.045);
+    wash.fillEllipse(W * 0.2, 150, 220, 90);
+    wash.fillStyle(0xff8bd1, 0.04);
+    wash.fillEllipse(W * 0.78, 680, 240, 100);
 
     const grid = this.add.graphics().setDepth(1);
-    grid.lineStyle(1, 0xf4f1ea, 0.07);
-    for (let x = 0; x <= W; x += 26) {
-      grid.lineBetween(x, 0, x, H);
-    }
-    for (let y = 0; y <= H; y += 26) {
-      grid.lineBetween(0, y, W, y);
-    }
-
-    const wash = this.add.graphics().setDepth(1);
-    wash.fillStyle(0x6ee7ff, 0.04);
-    wash.fillRect(0, 120, W, 80);
-    wash.fillStyle(0xff8bd1, 0.035);
-    wash.fillRect(0, 620, W, 70);
+    grid.lineStyle(1, 0xf4f1ea, 0.05);
+    for (let x = 0; x <= W; x += 28) grid.lineBetween(x, 0, x, H);
+    for (let y = 0; y <= H; y += 28) grid.lineBetween(0, y, W, y);
 
     const colors = [0x8b9bff, 0x6ee7ff, 0xff8bd1, 0xe8ff47];
-    for (let i = 0; i < 8; i++) {
-      const x = 18 + i * 52;
-      const h = 110 + (i % 3) * 64;
-      const y = i % 2 === 0 ? 96 + h / 2 : H - 96 - h / 2;
-      const rack = this.add.rectangle(x, y, 22, h, 0x161920, 0.95).setDepth(2);
-      rack.setStrokeStyle(1, colors[i % colors.length], 0.28);
+    for (let i = 0; i < 7; i++) {
+      const x = 22 + i * 56;
+      const h = 96 + (i % 3) * 54;
+      const y = i % 2 === 0 ? 92 + h / 2 : H - 92 - h / 2;
+      const rack = this.add.rectangle(x, y, 20, h, 0x151820, 0.92).setDepth(2);
+      rack.setStrokeStyle(1, colors[i % colors.length], 0.32);
       this.racks.push(rack);
-      const flask = this.add.circle(x, y, 7, colors[i % colors.length], 0.35).setDepth(2);
+      const flask = this.add.circle(x, y, 6, colors[i % colors.length], 0.4).setDepth(2);
       this.racks.push(flask);
     }
 
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 12; i++) {
       const mote = this.add.circle(
         Math.random() * W,
         Math.random() * H,
-        1.4 + Math.random() * 2,
+        1.3 + Math.random() * 1.8,
         i % 2 === 0 ? 0xe8ff47 : 0x6ee7ff,
-        0.22 + Math.random() * 0.3,
+        0.2 + Math.random() * 0.28,
       );
       mote.setDepth(3);
-      this.motes.push({ g: mote, vx: 18 + Math.random() * 36 });
+      this.motes.push({ g: mote, vx: 16 + Math.random() * 32 });
     }
 
     const rails = this.add.graphics().setDepth(8);
-    rails.fillStyle(0x141820, 1);
+    rails.fillStyle(0x10141a, 1);
     rails.fillRect(0, 0, W, RAIL);
     rails.fillRect(0, H - RAIL, W, RAIL);
-    rails.fillStyle(0xf4f1ea, 0.16);
+    rails.fillStyle(0xffffff, 0.06);
+    rails.fillRect(0, RAIL - 10, W, 6);
+    rails.fillStyle(0xf4f1ea, 0.18);
     rails.fillRect(0, RAIL - 4, W, 4);
     rails.fillRect(0, H - RAIL, W, 4);
-    rails.lineStyle(2, 0xe8ff47, 0.7);
+    rails.lineStyle(2, 0xe8ff47, 0.75);
     for (let x = 0; x < W; x += 12) {
       rails.lineBetween(x, RAIL - 2, Math.min(x + 7, W), RAIL - 2);
       rails.lineBetween(x, H - RAIL + 2, Math.min(x + 7, W), H - RAIL + 2);
@@ -244,11 +291,13 @@ export class JumpScene extends Phaser.Scene {
   ): Phaser.GameObjects.Container {
     const col = this.add.container(x, y);
     const g = this.add.graphics();
-    g.fillStyle(0x1a222c, 0.97);
+    g.fillStyle(0x1c2430, 0.98);
     g.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
-    g.fillStyle(0x6ee7ff, 0.1);
-    g.fillRoundedRect(-w / 2 + 6, -h / 2 + 7, w * 0.36, Math.max(12, h - 14), 5);
-    g.lineStyle(2, 0xf4f1ea, 0.55);
+    g.fillStyle(0x6ee7ff, 0.12);
+    g.fillRoundedRect(-w / 2 + 5, -h / 2 + 6, w * 0.34, Math.max(12, h - 12), 5);
+    g.fillStyle(0xffffff, 0.06);
+    g.fillRoundedRect(w / 2 - 14, -h / 2 + 8, 8, Math.max(10, h - 16), 4);
+    g.lineStyle(2, 0xf4f1ea, 0.5);
     g.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
 
     const step = 32;
@@ -257,19 +306,19 @@ export class JumpScene extends Phaser.Scene {
     for (let i = 0; i < n; i++) {
       const vy = -h / 2 + 18 + i * step;
       if (vy > h / 2 - 18) continue;
-      g.fillStyle(vial[i % vial.length], 0.38);
+      g.fillStyle(vial[i % vial.length], 0.42);
       g.fillRoundedRect(-12, vy - 11, 24, 22, 8);
-      g.lineStyle(1, 0xf4f1ea, 0.4);
+      g.lineStyle(1, 0xf4f1ea, 0.38);
       g.strokeRoundedRect(-12, vy - 11, 24, 22, 8);
-      g.fillStyle(0xffffff, 0.16);
+      g.fillStyle(0xffffff, 0.18);
       g.fillCircle(-5, vy - 4, 3);
     }
 
     const lipY = lip === 'bottom' ? h / 2 - 6 : -h / 2 + 6;
-    g.fillStyle(0xe8ff47, 0.95);
-    g.fillRoundedRect(-w / 2 - 4, lipY - 5, w + 8, 10, 4);
     g.fillStyle(0xe8ff47, 0.22);
     g.fillRoundedRect(-w / 2 - 10, lipY - 12, w + 20, 24, 10);
+    g.fillStyle(0xe8ff47, 0.96);
+    g.fillRoundedRect(-w / 2 - 4, lipY - 5, w + 8, 10, 4);
     col.add(g);
     return col;
   }
@@ -288,21 +337,21 @@ export class JumpScene extends Phaser.Scene {
   }
 
   private spawnTrail(): void {
-    if (this.time.now - this.lastTrail < 48) return;
+    if (this.time.now - this.lastTrail < 52) return;
     this.lastTrail = this.time.now;
-    const dot = this.add.circle(PX - 10, this.py + 4, 3.2, creature(5).color, 0.35).setDepth(18);
+    const dot = this.add.circle(PX - 12, this.py + 4, 3.4, creature(5).color, 0.32).setDepth(18);
     this.tweens.add({
       targets: dot,
-      x: PX - 46,
+      x: PX - 50,
       alpha: 0,
-      scale: 0.2,
-      duration: 280,
+      scale: 0.15,
+      duration: 260,
       onComplete: () => dot.destroy(),
     });
   }
 
   private tickDecor(s: number): void {
-    const drift = (this.phase === 'play' ? this.scrollSpeed() : 36) * s;
+    const drift = (this.phase === 'play' && this.time.now >= this.frozenUntil ? this.scrollSpeed() : 36) * s;
     for (const rack of this.racks) {
       rack.x -= drift * 0.28;
       if (rack.x < -20) rack.x = W + 20;
@@ -329,36 +378,38 @@ export class JumpScene extends Phaser.Scene {
     return false;
   }
 
-  private burst(x: number, y: number, color: number): void {
-    const g = this.add.graphics().setDepth(22);
-    g.fillStyle(color, 0.8);
-    for (let i = 0; i < 7; i++) {
-      const a = (Math.PI * 2 * i) / 7;
-      g.fillCircle(x + Math.cos(a) * 14, y + Math.sin(a) * 14, 3);
-    }
-    this.tweens.add({
-      targets: g,
-      alpha: 0,
-      duration: 280,
-      onComplete: () => g.destroy(),
-    });
-  }
-
   private gameOver(): void {
     if (this.phase !== 'play') return;
     this.phase = 'over';
+    const prevBest = this.best;
     saveJumpBest(this.score);
     this.best = loadJumpBest();
     this.syncHud();
-    this.cameras.main.shake(160, 0.01);
-    this.burst(PX, this.py, 0xe8ff47);
+    this.frozenUntil = this.time.now + 90;
+    squashTo(this, this.player, 1.22, 0.7, 180);
+    this.cameras.main.shake(180, 0.012);
+    burstDots(this, PX, this.py, 0xe8ff47, 10);
+    screenWash(this, 0xff8bd1, 0.18, 260);
+    sfxLand();
+    sfxOver();
     el('over-score').textContent = `Distancia ${this.score} · Mejor ${this.best}`;
-    el('overlay-over').hidden = false;
+    const rec = document.getElementById('over-record');
+    if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
+    this.time.delayedCall(140, () => {
+      el('overlay-over').hidden = false;
+    });
   }
 
   private syncHud(): void {
     el('score').textContent = String(this.score);
     el('best').textContent = String(this.best);
-    el('hint').textContent = `${creature(5).emoji} ${creature(5).code} ${creature(5).name}`;
+    const c = creature(5);
+    const chip = document.getElementById('next-chip');
+    if (chip) {
+      chip.style.background = c.hex;
+      chip.textContent = c.emoji;
+    }
+    const code = document.getElementById('next-code');
+    if (code) code.textContent = c.code;
   }
 }

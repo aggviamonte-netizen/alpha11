@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { creature, radiusPx, rollDropTier } from './canon';
 import { DANGER_Y, DROP_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL } from './layout';
+import { burstDots, floatLabel, screenWash, squashTo } from './juice';
 import { loadBest, mergePoints, popPoints, resetScore, saveScore } from './score';
 import { sfxDrop, sfxMerge, sfxOver, sfxPop, unlockSfx } from './sfx';
 import { drawCreature, paintArena } from './sprites';
@@ -59,6 +60,7 @@ export class LabScene extends Phaser.Scene {
   private guide!: Phaser.GameObjects.Graphics;
   private danger!: Phaser.GameObjects.Graphics;
   private hintShown = false;
+  private frozenUntil = 0;
 
   constructor() {
     super('lab');
@@ -74,6 +76,7 @@ export class LabScene extends Phaser.Scene {
     this.pieces = [];
     this.contacts.clear();
     this.byBody = new WeakMap();
+    this.frozenUntil = 0;
     this.nextTier = rollDropTier();
     this.paintStatic();
     this.matter.world.setGravity(0, 1.55);
@@ -119,6 +122,7 @@ export class LabScene extends Phaser.Scene {
     }
 
     if (this.phase !== 'play') return;
+    if (this.time.now < this.frozenUntil) return;
     const now = this.time.now;
     this.tickMerges(now);
     this.tickDanger(now);
@@ -178,7 +182,7 @@ export class LabScene extends Phaser.Scene {
 
   private drawGuide(x: number, r: number): void {
     this.guide.clear();
-    this.guide.lineStyle(1.5, 0xe8ff47, 0.18);
+    this.guide.lineStyle(1.5, 0xe8ff47, 0.2);
     const top = DROP_Y + r + 6;
     for (let y = top; y < FLOOR_Y - 6; y += 10) {
       this.guide.beginPath();
@@ -186,8 +190,8 @@ export class LabScene extends Phaser.Scene {
       this.guide.lineTo(x, Math.min(y + 5, FLOOR_Y - 6));
       this.guide.strokePath();
     }
-    this.guide.lineStyle(1, 0xe8ff47, 0.28);
-    this.guide.strokeCircle(x, FLOOR_Y - 3, 3);
+    this.guide.fillStyle(0xe8ff47, 0.35);
+    this.guide.fillCircle(x, FLOOR_Y - 4, 3);
   }
 
   private makePreview(): void {
@@ -195,18 +199,18 @@ export class LabScene extends Phaser.Scene {
     const tier = this.nextTier;
     this.nextTier = rollDropTier();
     const root = drawCreature(this, 0, 0, tier);
-    root.setAlpha(0.9);
+    root.setAlpha(0.92);
     root.setScale(0.74);
     const r = radiusPx(tier);
     const x = Phaser.Math.Clamp(this.input.activePointer.x || W / 2, INNER_L + r, INNER_R - r);
     root.setPosition(x, DROP_Y);
     this.tweens.add({
       targets: root,
-      scaleX: 0.8,
-      scaleY: 0.8,
+      scaleX: 0.82,
+      scaleY: 0.7,
       yoyo: true,
       repeat: -1,
-      duration: 720,
+      duration: 640,
       ease: 'Sine.inOut',
     });
     this.preview = { tier, root, x };
@@ -222,11 +226,19 @@ export class LabScene extends Phaser.Scene {
   private drop(): void {
     if (this.phase !== 'play' || !this.canDrop || !this.preview) return;
     if (this.time.now - this.startAt < 200) return;
-    const { tier, x } = this.preview;
-    this.destroyPreview();
-    this.spawn(tier, x, DROP_Y, false);
-    sfxDrop();
-    this.hideDropHint();
+    const { tier, x, root } = this.preview;
+    this.tweens.killTweensOf(root);
+    root.setScale(1.14, 0.7);
+    this.preview = { tier, root, x };
+    this.time.delayedCall(42, () => {
+      if (this.phase !== 'play' || !this.preview) return;
+      const dropX = this.preview.x;
+      const dropTier = this.preview.tier;
+      this.destroyPreview();
+      this.spawn(dropTier, dropX, DROP_Y, false);
+      sfxDrop();
+      this.hideDropHint();
+    });
     this.canDrop = false;
     this.time.delayedCall(DROP_CD, () => {
       if (this.phase !== 'play') return;
@@ -242,6 +254,7 @@ export class LabScene extends Phaser.Scene {
       friction: 0.44,
       frictionAir: 0.012,
       label: `a${tier}`,
+      sleepThreshold: 24,
     });
     const root = drawCreature(this, x, y, tier);
     if (popIn) {
@@ -253,6 +266,8 @@ export class LabScene extends Phaser.Scene {
         duration: 240,
         ease: 'Back.out',
       });
+    } else {
+      squashTo(this, root, 1.16, 0.76, 180);
     }
     const piece: Piece = {
       id: nextPieceId++,
@@ -290,15 +305,7 @@ export class LabScene extends Phaser.Scene {
   private squash(p: Piece, sx: number, sy: number, now: number): void {
     if (p.locked || now - p.lastSquash < 90) return;
     p.lastSquash = now;
-    this.tweens.killTweensOf(p.root);
-    p.root.setScale(sx, sy);
-    this.tweens.add({
-      targets: p.root,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 150,
-      ease: 'Sine.out',
-    });
+    squashTo(this, p.root, sx, sy, 150);
   }
 
   private tickMerges(now: number): void {
@@ -348,19 +355,29 @@ export class LabScene extends Phaser.Scene {
     if (a.tier >= 11) {
       const pts = popPoints(combo);
       this.addScore(pts, mx, my, combo, true);
-      this.burst(mx, my, 0xf4f1ea, 14);
+      burstDots(this, mx, my, 0xf4f1ea, 12);
       this.cameras.main.shake(90, 0.006);
       sfxPop();
+      this.hitStop(72);
       return;
     }
 
     const pts = mergePoints(a.tier + 1, combo);
     this.addScore(pts, mx, my, combo, false);
-    this.burst(mx, my, tint, combo ? 12 : 9);
+    burstDots(this, mx, my, tint, combo ? 11 : 8);
     this.cameras.main.shake(combo ? 70 : 46, combo ? 0.0045 : 0.003);
     sfxMerge(combo);
     const born = this.spawn(a.tier + 1, mx, my, true);
     this.matter.body.setVelocity(born.body, { x: 0, y: -1.4 });
+    this.hitStop(combo ? 46 : 28);
+  }
+
+  private hitStop(ms: number): void {
+    this.frozenUntil = this.time.now + ms;
+    this.matter.world.pause();
+    this.time.delayedCall(ms, () => {
+      if (this.phase === 'play') this.matter.world.resume();
+    });
   }
 
   private kill(p: Piece): void {
@@ -379,55 +396,10 @@ export class LabScene extends Phaser.Scene {
     this.best = loadBest();
     this.syncHud();
     const label = pop ? `+${pts} POP` : combo ? `+${pts} COMBO` : `+${pts}`;
-    const t = this.add
-      .text(x, y, label, {
-        fontFamily: 'Outfit, ui-sans-serif, system-ui, sans-serif',
-        fontSize: pop ? '20px' : combo ? '18px' : '16px',
-        color: pop ? '#F4F1EA' : '#E8FF47',
-        fontStyle: 'bold',
-        stroke: '#0B0B0C',
-        strokeThickness: 5,
-      })
-      .setOrigin(0.5)
-      .setDepth(20)
-      .setScale(0.7);
-    this.tweens.add({
-      targets: t,
-      y: y - 42,
-      alpha: 0,
-      scale: 1.08,
-      duration: 680,
-      ease: 'Quad.out',
-      onComplete: () => t.destroy(),
+    floatLabel(this, x, y, label, {
+      color: pop ? '#F4F1EA' : '#E8FF47',
+      size: pop ? '20px' : combo ? '18px' : '16px',
     });
-  }
-
-  private burst(x: number, y: number, color: number, count: number): void {
-    const ring = this.add.circle(x, y, 10, color, 0).setStrokeStyle(2, color, 0.85).setDepth(18);
-    this.tweens.add({
-      targets: ring,
-      scale: 2.3,
-      alpha: 0,
-      duration: 320,
-      ease: 'Quad.out',
-      onComplete: () => ring.destroy(),
-    });
-    const n = Math.min(count, 14);
-    for (let i = 0; i < n; i++) {
-      const a = (Math.PI * 2 * i) / n + Math.random() * 0.28;
-      const dist = 18 + Math.random() * 26;
-      const dot = this.add.circle(x, y, 2.2 + Math.random() * 2.4, color, 0.95).setDepth(19);
-      this.tweens.add({
-        targets: dot,
-        x: x + Math.cos(a) * dist,
-        y: y + Math.sin(a) * dist,
-        alpha: 0,
-        scale: 0.15,
-        duration: 360 + Math.random() * 160,
-        ease: 'Quad.out',
-        onComplete: () => dot.destroy(),
-      });
-    }
   }
 
   private tickDanger(now: number): void {
@@ -466,10 +438,14 @@ export class LabScene extends Phaser.Scene {
     this.guide.clear();
     this.drawDanger(0.95);
     this.matter.world.pause();
+    const prevBest = this.best;
     saveScore(this.score);
     this.best = loadBest();
     this.syncHud();
+    screenWash(this, 0xff3b4a, 0.16, 280);
     el('over-score').textContent = `Puntos ${this.score} · Mejor ${this.best}`;
+    const rec = document.getElementById('over-record');
+    if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
     el('overlay-over').hidden = false;
     sfxOver();
   }

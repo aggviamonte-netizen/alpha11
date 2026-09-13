@@ -21,19 +21,31 @@
   <body>
     <main class="shell">
       <h1 class="logo">ALPHA<span>-11</span></h1>
-      <section class="hero">
-        <h2>LAB</h2>
-        <p class="hero-sub">merge</p>
-        <a class="play" href="/lab/">JUGAR</a>
-      </section>
-      <section class="soon-row">
-        <a class="soon-card playable" href="/jump/">
-          <strong>JUMP</strong>
-          <span>JUGAR</span>
+      <p class="tagline">laboratorio casual</p>
+      <section class="games">
+        <a class="game-card" data-game="lab" href="/lab/">
+          <span class="game-orb" id="orb-lab" aria-hidden="true"></span>
+          <span class="game-meta">
+            <strong>LAB</strong>
+            <em>merge</em>
+          </span>
+          <span class="game-go">JUGAR</span>
         </a>
-        <a class="soon-card playable" href="/shift/">
-          <strong>SHIFT</strong>
-          <span>JUGAR</span>
+        <a class="game-card" data-game="jump" href="/jump/">
+          <span class="game-orb" id="orb-jump" aria-hidden="true"></span>
+          <span class="game-meta">
+            <strong>JUMP</strong>
+            <em>flap</em>
+          </span>
+          <span class="game-go">JUGAR</span>
+        </a>
+        <a class="game-card" data-game="shift" href="/shift/">
+          <span class="game-orb" id="orb-shift" aria-hidden="true"></span>
+          <span class="game-meta">
+            <strong>SHIFT</strong>
+            <em>2048</em>
+          </span>
+          <span class="game-go">JUGAR</span>
         </a>
       </section>
       <div class="canon-row" id="canon-row" aria-hidden="true"></div>

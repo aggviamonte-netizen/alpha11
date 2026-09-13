@@ -20,14 +20,31 @@
   </head>
   <body class="lab-body">
     <div class="stage">
-      <header class="hud hud-simple">
-        <div>
-          <div class="title">ALPHA-11 SHIFT</div>
-          <div class="next" id="hint">Une criaturas</div>
+      <header class="hud">
+        <div class="hud-brand">
+          <svg class="beaker" viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="2.2" y="2.2" width="4.6" height="4.6" rx="1.1" fill="none" stroke="currentColor" stroke-width="1.4" />
+            <rect x="9.2" y="2.2" width="4.6" height="4.6" rx="1.1" fill="none" stroke="currentColor" stroke-width="1.4" />
+            <rect x="2.2" y="9.2" width="4.6" height="4.6" rx="1.1" fill="none" stroke="currentColor" stroke-width="1.4" />
+            <rect x="9.2" y="9.2" width="4.6" height="4.6" rx="1.1" fill="none" stroke="currentColor" stroke-width="1.4" />
+          </svg>
+          <span>ALPHA-11 SHIFT</span>
         </div>
-        <div class="stats">
-          <div>Puntos <b id="score">0</b></div>
-          <div>Mejor <b id="best">0</b></div>
+        <div class="hud-scores">
+          <div>
+            <span class="lbl">SCORE</span>
+            <b id="score">0</b>
+          </div>
+          <div class="hud-split"></div>
+          <div>
+            <span class="lbl">BEST</span>
+            <b id="best">0</b>
+          </div>
+        </div>
+        <div class="hud-next">
+          <span class="lbl">MAX</span>
+          <div class="next-chip" id="next-chip"></div>
+          <span class="next-code" id="next-code">MAX</span>
         </div>
       </header>
       <div id="game"></div>
@@ -35,13 +52,14 @@
         <div class="panel start-panel">
           <p class="eyebrow">ALPHA-11</p>
           <h1>SHIFT</h1>
-          <p class="toca">TOCA</p>
+          <p class="toca">DESLIZA PARA MOVER</p>
         </div>
       </div>
       <div class="overlay" id="overlay-over" hidden>
         <div class="panel over-panel">
           <p class="eyebrow">ALPHA-11 SHIFT</p>
           <p class="fin" id="over-title">FIN</p>
+          <p class="record" id="over-record" hidden>NUEVO RÉCORD</p>
           <p class="over-score" id="over-score"></p>
           <div class="actions">
             <button type="button" id="keep" hidden>SEGUIR</button>

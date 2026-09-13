@@ -1,7 +1,20 @@
-import { CREATURES } from './game/canon';
+import { creature, CREATURES } from './game/canon';
 import { registerPwa } from './pwa';
 
 registerPwa();
+
+function paintOrb(id: string, tier: number): void {
+  const node = document.getElementById(id);
+  if (!node) return;
+  const c = creature(tier);
+  node.style.background = c.hex;
+  node.textContent = c.emoji;
+  node.title = `${c.code} ${c.name}`;
+}
+
+paintOrb('orb-lab', 3);
+paintOrb('orb-jump', 5);
+paintOrb('orb-shift', 7);
 
 const row = document.getElementById('canon-row');
 if (row) {

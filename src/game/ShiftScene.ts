@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { creature } from './canon';
 import { el } from './dom';
-import { drawCreatureAtRadius } from './drawCreature';
+import { burstDots, floatLabel, screenWash } from './juice';
+import { sfxMerge, sfxOver, sfxSlide, sfxWin, unlockSfx } from './sfx';
 import { loadShiftBest, resetShiftScore, saveShiftScore, shiftMergePoints } from './shiftScore';
+import { drawCreature, paintLabBackdrop } from './sprites';
 
 export const W = 390;
 export const H = 844;
@@ -56,6 +58,7 @@ export class ShiftScene extends Phaser.Scene {
   private busy = false;
   private won = false;
   private swipe: { x: number; y: number } | null = null;
+  private boardGlow!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super('shift');
@@ -75,6 +78,7 @@ export class ShiftScene extends Phaser.Scene {
     this.paintBoard();
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      unlockSfx();
       if (this.phase !== 'play' || this.busy) return;
       this.swipe = { x: p.x, y: p.y };
     });
@@ -123,6 +127,7 @@ export class ShiftScene extends Phaser.Scene {
 
   private beginPlay(): void {
     if (this.phase === 'play') return;
+    unlockSfx();
     el('overlay-start').hidden = true;
     el('overlay-start').onclick = null;
     this.phase = 'play';
@@ -134,35 +139,64 @@ export class ShiftScene extends Phaser.Scene {
   }
 
   private paintBoard(): void {
-    this.add.rectangle(W / 2, H / 2, W, H, 0x0b0b0c);
+    paintLabBackdrop(this);
+    const bg = this.add.graphics();
+    bg.fillStyle(0x6ee7ff, 0.04);
+    bg.fillEllipse(W / 2, ORIGIN_Y + BOARD / 2, 340, 360);
+    bg.fillStyle(0x8b9bff, 0.03);
+    bg.fillCircle(60, 120, 70);
+
     const g = this.add.graphics();
-    g.fillStyle(0x101012, 1);
-    g.fillRoundedRect(ORIGIN_X - 14, ORIGIN_Y - 14, BOARD + 28, BOARD + 28, 22);
-    g.lineStyle(2, 0xe8ff47, 0.55);
+    g.fillStyle(0x1a1c22, 1);
+    g.fillRoundedRect(ORIGIN_X - 18, ORIGIN_Y - 18, BOARD + 36, BOARD + 36, 26);
+    g.fillStyle(0x121318, 1);
+    g.fillRoundedRect(ORIGIN_X - 12, ORIGIN_Y - 12, BOARD + 24, BOARD + 24, 22);
+    g.lineStyle(2, 0x6ee7ff, 0.45);
     g.strokeRoundedRect(ORIGIN_X - 14, ORIGIN_Y - 14, BOARD + 28, BOARD + 28, 22);
-    g.lineStyle(1, 0xf4f1ea, 0.14);
+    g.lineStyle(1, 0xf4f1ea, 0.12);
     g.strokeRoundedRect(ORIGIN_X - 8, ORIGIN_Y - 8, BOARD + 16, BOARD + 16, 18);
 
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
         const x = ORIGIN_X + c * (CELL + GAP);
         const y = ORIGIN_Y + r * (CELL + GAP);
-        g.fillStyle(0x1a1a1f, 1);
+        g.fillStyle(0x1c1d24, 1);
         g.fillRoundedRect(x, y, CELL, CELL, 16);
-        g.lineStyle(1, 0xf4f1ea, 0.12);
-        g.strokeRoundedRect(x, y, CELL, CELL, 16);
+        g.fillStyle(0x000000, 0.18);
+        g.fillRoundedRect(x + 4, y + 8, CELL - 8, CELL - 12, 12);
+        g.lineStyle(1, 0xffffff, 0.08);
+        g.strokeRoundedRect(x + 1, y + 1, CELL - 2, CELL - 2, 15);
       }
     }
 
-    const sub = this.add
-      .text(W / 2, ORIGIN_Y + BOARD + 36, 'Desliza · A1 → A11', {
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+    this.boardGlow = this.add.graphics().setDepth(1);
+    this.drawBoardGlow(0);
+
+    this.add
+      .text(W / 2, ORIGIN_Y + BOARD + 38, 'Desliza · A1 → A11', {
+        fontFamily: 'Outfit, ui-sans-serif, system-ui, sans-serif',
         fontSize: '13px',
         color: '#F4F1EA',
       })
       .setOrigin(0.5)
-      .setAlpha(0.38);
-    void sub;
+      .setAlpha(0.4);
+  }
+
+  private drawBoardGlow(alpha: number): void {
+    this.boardGlow.clear();
+    if (alpha <= 0) return;
+    this.boardGlow.lineStyle(3, 0xe8ff47, alpha);
+    this.boardGlow.strokeRoundedRect(ORIGIN_X - 14, ORIGIN_Y - 14, BOARD + 28, BOARD + 28, 22);
+  }
+
+  private flashBoard(): void {
+    this.drawBoardGlow(0.55);
+    this.tweens.addCounter({
+      from: 0.55,
+      to: 0,
+      duration: 280,
+      onUpdate: (tw) => this.drawBoardGlow(tw.getValue() ?? 0),
+    });
   }
 
   private tryMove(dir: Dir): void {
@@ -171,22 +205,43 @@ export class ShiftScene extends Phaser.Scene {
     const gained = this.apply(dir);
     if (this.snapshot() === before) return;
 
+    const merges = this.tiles.filter((t) => t.merged && !t.dead).length;
     this.score += gained;
     saveShiftScore(this.score);
     this.best = loadShiftBest();
     this.syncHud();
+    sfxSlide();
+    if (merges) {
+      sfxMerge(merges > 1);
+      this.flashBoard();
+    }
+    if (merges > 1) {
+      floatLabel(this, W / 2, ORIGIN_Y - 28, `COMBO ×${merges}`, { size: '18px' });
+    }
+
     this.busy = true;
-    this.animate(() => {
-      this.purgeDead();
-      this.spawn(1);
-      this.refreshSprites();
-      this.busy = false;
-      if (this.tiles.some((t) => t.tier >= 11) && !this.won) {
-        this.win();
-        return;
-      }
-      if (!this.canMove()) this.gameOver();
-    });
+    const run = (): void => {
+      this.animate(() => {
+        this.purgeDead();
+        this.spawn(1);
+        this.refreshSprites();
+        this.busy = false;
+        if (this.tiles.some((t) => t.tier >= 11) && !this.won) {
+          this.win();
+          return;
+        }
+        if (!this.canMove()) this.gameOver();
+      });
+    };
+    if (merges) {
+      this.tweens.pauseAll();
+      this.time.delayedCall(32, () => {
+        this.tweens.resumeAll();
+        run();
+      });
+    } else {
+      run();
+    }
   }
 
   private snapshot(): string {
@@ -284,16 +339,21 @@ export class ShiftScene extends Phaser.Scene {
         alpha: t.dead ? 0 : 1,
         scale: t.merged ? 1.08 : t.dead ? 0.7 : 1,
         duration: SLIDE_MS,
-        ease: 'Quad.easeOut',
+        ease: 'Cubic.easeOut',
         onComplete: () => {
           if (t.merged && !t.dead) {
+            burstDots(this, cellX(t.c), cellY(t.r), creature(t.tier).color, 8);
+            floatLabel(this, cellX(t.c), cellY(t.r) - 8, `+${shiftMergePoints(t.tier)}`, {
+              size: '14px',
+              lift: 28,
+            });
             spr.destroy(true);
             this.sprites.delete(t.id);
             this.makeSprite(t, false);
             const born = this.sprites.get(t.id);
             if (born) {
-              born.setScale(1.12);
-              this.tweens.add({ targets: born, scale: 1, duration: 90, onComplete: finish });
+              born.setScale(1.16);
+              this.tweens.add({ targets: born, scale: 1, duration: 110, ease: 'Back.out', onComplete: finish });
               return;
             }
           }
@@ -339,12 +399,12 @@ export class ShiftScene extends Phaser.Scene {
   }
 
   private makeSprite(tile: Tile, pop: boolean): void {
-    const spr = drawCreatureAtRadius(this, cellX(tile.c), cellY(tile.r), tile.tier, TILE_R, 1);
+    const spr = drawCreature(this, cellX(tile.c), cellY(tile.r), tile.tier, TILE_R);
     spr.setDepth(10);
     this.sprites.set(tile.id, spr);
     if (pop) {
-      spr.setScale(0.2);
-      this.tweens.add({ targets: spr, scale: 1, duration: 140, ease: 'Back.easeOut' });
+      spr.setScale(0.18);
+      this.tweens.add({ targets: spr, scale: 1, duration: 160, ease: 'Back.easeOut' });
     }
   }
 
@@ -375,11 +435,18 @@ export class ShiftScene extends Phaser.Scene {
   private win(): void {
     this.won = true;
     this.phase = 'win';
+    const prevBest = this.best;
     saveShiftScore(this.score);
     this.best = loadShiftBest();
     this.syncHud();
+    const a11 = this.tiles.find((t) => !t.dead && t.tier >= 11);
+    if (a11) burstDots(this, cellX(a11.c), cellY(a11.r), 0xf4f1ea, 12);
+    screenWash(this, 0xe8ff47, 0.12, 320);
+    sfxWin();
     el('over-title').textContent = 'A11';
     el('over-score').textContent = `Puntos ${this.score} · Mejor ${this.best}`;
+    const rec = document.getElementById('over-record');
+    if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
     el('keep').hidden = false;
     el('overlay-over').hidden = false;
   }
@@ -393,11 +460,16 @@ export class ShiftScene extends Phaser.Scene {
   private gameOver(): void {
     if (this.phase !== 'play') return;
     this.phase = 'over';
+    const prevBest = this.best;
     saveShiftScore(this.score);
     this.best = loadShiftBest();
     this.syncHud();
+    screenWash(this, 0x6ee7ff, 0.12, 260);
+    sfxOver();
     el('over-title').textContent = 'FIN';
     el('over-score').textContent = `Puntos ${this.score} · Mejor ${this.best}`;
+    const rec = document.getElementById('over-record');
+    if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
     el('keep').hidden = true;
     el('overlay-over').hidden = false;
   }
@@ -407,6 +479,12 @@ export class ShiftScene extends Phaser.Scene {
     el('best').textContent = String(this.best);
     const top = this.tiles.reduce((m, t) => Math.max(m, t.dead ? 0 : t.tier), 0);
     const c = creature(Math.max(1, top || 1));
-    el('hint').textContent = top ? `Max ${c.emoji} ${c.code}` : 'Une criaturas';
+    const chip = document.getElementById('next-chip');
+    if (chip) {
+      chip.style.background = c.hex;
+      chip.textContent = top ? c.emoji : '🫧';
+    }
+    const code = document.getElementById('next-code');
+    if (code) code.textContent = top ? c.code : 'MAX';
   }
 }
