@@ -222,6 +222,38 @@ button {
   background: #c9842a;
 }
 
+.pulso-orb,
+.shift-orb {
+  position: relative;
+}
+
+.pulso-orb {
+  background:
+    radial-gradient(circle at 72% 42%, #6ee7ff 0 7%, transparent 8%),
+    linear-gradient(115deg, transparent 36%, #e8ff47 36% 42%, transparent 43%),
+    linear-gradient(90deg, #1a1628 0 22%, #7b4dff 22% 78%, #6ee7ff 78%);
+  clip-path: polygon(12% 32%, 78% 18%, 100% 50%, 78% 82%, 12% 68%, 0 50%);
+}
+
+.shift-orb {
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, #6ee7ff 0 18%, transparent 19%),
+    linear-gradient(315deg, #8b9bff 0 16%, transparent 17%),
+    linear-gradient(180deg, #1a2238, #12161f);
+  box-shadow:
+    inset 0 0 0 3px #6ee7ff,
+    inset 0 2px 4px rgba(255, 255, 255, 0.35),
+    0 8px 16px rgba(0, 0, 0, 0.35);
+}
+
+.shift-orb::before {
+  content: '◆';
+  color: #e8ff47;
+  font-size: 22px;
+  line-height: 1;
+}
+
 .game-card[data-game='sniper'] .game-go {
   background: #8b9bff;
   color: var(--bg);
@@ -418,6 +450,12 @@ button {
 
 .blok-chip {
   background: #f0c094;
+}
+
+.pulso-chip {
+  background: linear-gradient(90deg, #1a1628 0 24%, #7b4dff 24% 76%, #6ee7ff 76%);
+  clip-path: polygon(8% 30%, 76% 18%, 100% 50%, 76% 82%, 8% 70%, 0 50%);
+  border-radius: 6px;
 }
 
 .next-code {
