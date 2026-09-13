@@ -244,6 +244,17 @@ body {
   gap: 16px;
   padding: 0 calc(12px + var(--pad-safe-r)) calc(10px + var(--pad-safe-b)) calc(12px + var(--pad-safe-l));
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+html.fight-playing .fight-pad {
+  opacity: 1;
+  visibility: visible;
+}
+
+html.fight-playing .fight-brand {
+  display: none;
 }
 
 .fight-cluster {

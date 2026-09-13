@@ -8,6 +8,10 @@
     return document.querySelector('.pause-instruction')?.classList.contains('show');
   }
 
+  function syncPlaying() {
+    document.documentElement.classList.toggle('fight-playing', playing());
+  }
+
   function isPhonePortrait() {
     const coarse = window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches;
     const narrow = Math.min(window.innerWidth, window.innerHeight) <= 900;
@@ -218,7 +222,16 @@
   document.addEventListener('fullscreenchange', refit);
   document.addEventListener('webkitfullscreenchange', refit);
 
+  const instruction = document.querySelector('.pause-instruction');
+  if (instruction && typeof MutationObserver === 'function') {
+    new MutationObserver(syncPlaying).observe(instruction, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
+
   syncOrientationGate();
+  syncPlaying();
   refit();
   requestAnimationFrame(refit);
 })();
