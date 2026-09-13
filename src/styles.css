@@ -142,10 +142,35 @@ button {
   display: grid;
   place-items: center;
   font-size: 26px;
+  color: #0b0b0c;
   box-shadow:
     inset 0 2px 4px rgba(255, 255, 255, 0.5),
     inset 0 -6px 10px rgba(0, 0, 0, 0.22),
     0 8px 16px rgba(0, 0, 0, 0.35);
+}
+
+.game-card[data-game='lab'] .game-orb {
+  background: #ff8a2a;
+}
+
+.game-card[data-game='stack'] .game-orb {
+  background: #ffb86b;
+}
+
+.game-card[data-game='sudoku'] .game-orb {
+  background: var(--accent);
+}
+
+.game-card[data-game='space'] .game-orb {
+  background: var(--cyan);
+}
+
+.game-card[data-game='fight'] .game-orb {
+  background: var(--pink);
+}
+
+.game-card[data-game='arcade'] .game-orb {
+  background: #c4b5fd;
 }
 
 .game-meta strong {
