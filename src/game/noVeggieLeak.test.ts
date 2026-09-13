@@ -22,7 +22,6 @@ const CREATURE_ALLOW = new Set([
   'src/game/veggieBody.ts',
   'src/game/sprites.ts',
   'src/game/LabScene.ts',
-  'src/hub.ts',
   'src/game/noVeggieLeak.test.ts',
 ]);
 
@@ -68,6 +67,7 @@ describe('LAB produce stays LAB-only', () => {
     assert.equal(/\bCREATURES\s*\./.test(hub), false);
     assert.equal(/canon-row/.test(hub), false);
     assert.equal(/paintLabOrb/.test(hub), true);
+    assert.equal(/from ['"].*canon['"]/.test(hub), false);
 
     const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
     assert.equal(/berenjena/i.test(html), false);

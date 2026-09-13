@@ -1,4 +1,3 @@
-import { creature } from './game/canon';
 import { bootStudio } from './studio';
 
 // Inventory placeholders live in HTML as [data-ad-slot] matching worker INVENTORY_SLOTS:
@@ -10,14 +9,15 @@ import { bootStudio } from './studio';
 
 bootStudio();
 
-/** Produce art on the hub lives on the LAB card orb only. Never paint CREATURES elsewhere. */
+/** LAB card only — hardcoded so the hub bundle never loads the produce ladder. */
+const LAB_ORB = { hex: '#FF8A2A', emoji: '🥕', title: 'LAB A3 Zanahoria' };
+
 function paintLabOrb(): void {
   const node = document.getElementById('orb-lab');
   if (!node) return;
-  const c = creature(3);
-  node.style.background = c.hex;
-  node.textContent = c.emoji;
-  node.title = `LAB ${c.code} ${c.name}`;
+  node.style.background = LAB_ORB.hex;
+  node.textContent = LAB_ORB.emoji;
+  node.title = LAB_ORB.title;
 }
 
 function titleOrb(id: string, title: string): void {
