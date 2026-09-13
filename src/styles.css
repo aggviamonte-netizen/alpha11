@@ -1,9 +1,11 @@
 :root {
   --bg: #0b0b0c;
   --accent: #e8ff47;
+  --pink: #ff8bd1;
+  --cyan: #6ee7ff;
   --text: #f4f1ea;
-  --muted: rgba(244, 241, 234, 0.4);
-  --card: #141416;
+  --muted: rgba(244, 241, 234, 0.42);
+  --card: #141418;
   --line: rgba(244, 241, 234, 0.1);
   --w: 390px;
   --h: 844px;
@@ -17,7 +19,9 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--bg);
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(232, 255, 71, 0.07), transparent 42%),
+    var(--bg);
   color: var(--text);
   font-family: Outfit, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
@@ -41,15 +45,15 @@ button {
   width: min(100vw, var(--w));
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 56px 22px 28px;
+  padding: 48px 20px 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .logo {
-  margin: 0 0 36px;
-  font-size: 28px;
+  margin: 0;
+  font-size: 30px;
   letter-spacing: 0.22em;
   font-weight: 800;
   color: var(--text);
@@ -59,130 +63,113 @@ button {
   color: var(--accent);
 }
 
-.hero {
-  width: 100%;
-  padding: 36px 22px 28px;
-  border-radius: 28px;
-  background: var(--card);
-  text-align: center;
-  box-shadow: inset 0 1px 0 rgba(244, 241, 234, 0.04);
-}
-
-.hero h2 {
-  margin: 0;
-  font-size: 42px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-}
-
-.hero-sub {
-  margin: 10px 0 0;
+.tagline {
+  margin: 8px 0 28px;
   color: var(--muted);
   letter-spacing: 0.28em;
-  font-size: 13px;
+  font-size: 11px;
   text-transform: lowercase;
 }
 
-.hero-sub::before,
-.hero-sub::after {
-  content: '';
-  display: inline-block;
-  width: 36px;
-  height: 1px;
-  margin: 0 10px 4px;
-  background: rgba(232, 255, 71, 0.55);
-  vertical-align: middle;
-}
-
-.play {
-  display: block;
-  margin: 26px 8px 0;
-  padding: 14px 18px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--bg);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  box-shadow: 0 8px 24px rgba(232, 255, 71, 0.18);
-}
-
-.play:active {
-  transform: scale(0.98);
-}
-
-.soon-row {
+.games {
   width: 100%;
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.soon-card {
-  min-height: 118px;
-  padding: 22px 12px 18px;
+.game-card {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 104px;
+  padding: 16px 16px 16px 14px;
   border-radius: 24px;
   background: var(--card);
-  color: var(--muted);
-  text-align: center;
-  pointer-events: none;
-  user-select: none;
+  box-shadow:
+    inset 0 1px 0 rgba(244, 241, 234, 0.06),
+    0 10px 28px rgba(0, 0, 0, 0.28);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.soon-card strong {
+.game-card[data-game='lab'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(232, 255, 71, 0.18), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card[data-game='jump'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(255, 139, 209, 0.18), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card[data-game='shift'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(110, 231, 255, 0.16), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card:active {
+  transform: scale(0.985);
+}
+
+.game-orb {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.5),
+    inset 0 -6px 10px rgba(0, 0, 0, 0.22),
+    0 8px 16px rgba(0, 0, 0, 0.35);
+}
+
+.game-meta strong {
   display: block;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0.14em;
-  color: rgba(244, 241, 234, 0.72);
-}
-
-.soon-card span {
-  display: block;
-  margin-top: 14px;
-  font-size: 10px;
   letter-spacing: 0.16em;
 }
 
-.soon-card span::before {
-  content: '';
+.game-meta em {
   display: block;
-  width: 5px;
-  height: 5px;
-  margin: 0 auto 10px;
-  border-radius: 50%;
-  background: rgba(244, 241, 234, 0.28);
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: lowercase;
 }
 
-.soon-card.playable {
-  pointer-events: auto;
-  user-select: auto;
-  color: var(--text);
-  box-shadow: inset 0 1px 0 rgba(244, 241, 234, 0.04);
-}
-
-.soon-card.playable strong {
-  color: var(--text);
-}
-
-.soon-card.playable span {
-  color: var(--accent);
-  font-weight: 800;
-}
-
-.soon-card.playable span::before {
+.game-go {
+  border-radius: 999px;
   background: var(--accent);
+  color: var(--bg);
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  box-shadow: 0 6px 18px rgba(232, 255, 71, 0.2);
 }
 
-.soon-card.playable:active {
-  transform: scale(0.98);
+.game-card[data-game='jump'] .game-go {
+  background: var(--pink);
+  box-shadow: 0 6px 18px rgba(255, 139, 209, 0.2);
+}
+
+.game-card[data-game='shift'] .game-go {
+  background: var(--cyan);
+  box-shadow: 0 6px 18px rgba(110, 231, 255, 0.18);
 }
 
 .canon-row {
   display: flex;
   gap: 10px;
-  margin-top: 34px;
+  margin-top: 32px;
 }
 
 .canon-dot {
@@ -203,6 +190,7 @@ button {
   text-align: center;
   color: var(--muted);
   font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 .lab-body {
@@ -211,6 +199,7 @@ button {
   touch-action: none;
   user-select: none;
   overscroll-behavior: none;
+  background: var(--bg);
 }
 
 .stage {
@@ -239,12 +228,6 @@ button {
   pointer-events: none;
 }
 
-.hud.hud-simple {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
 .hud .title {
   font-size: 12px;
   letter-spacing: 0.1em;
@@ -259,18 +242,12 @@ button {
   color: var(--muted);
 }
 
-.hud .next {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--text);
-}
-
 .hud-brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  letter-spacing: 0.08em;
   font-weight: 750;
   color: var(--accent);
 }
@@ -288,6 +265,10 @@ button {
   align-items: center;
   gap: 12px;
   text-align: center;
+  padding: 6px 10px;
+  border-radius: 16px;
+  background: rgba(11, 11, 12, 0.42);
+  box-shadow: inset 0 1px 0 rgba(244, 241, 234, 0.05);
 }
 
 .hud-split {
@@ -360,21 +341,40 @@ button {
   z-index: 3;
   display: grid;
   place-items: center;
-  background: rgba(11, 11, 12, 0.72);
-  backdrop-filter: blur(10px);
+  background: rgba(11, 11, 12, 0.74);
+  backdrop-filter: blur(12px);
 }
 
 .overlay[hidden] {
   display: none;
 }
 
+.overlay:not([hidden]) .panel {
+  animation: panel-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .panel {
   width: min(86%, 300px);
   text-align: center;
-  padding: 28px 22px 26px;
+  padding: 30px 22px 26px;
   border-radius: 28px;
-  background: var(--card);
-  box-shadow: inset 0 1px 0 rgba(244, 241, 234, 0.05);
+  background:
+    linear-gradient(180deg, rgba(244, 241, 234, 0.04), transparent 40%),
+    var(--card);
+  box-shadow:
+    inset 0 1px 0 rgba(244, 241, 234, 0.06),
+    0 18px 40px rgba(0, 0, 0, 0.4);
 }
 
 .eyebrow {
@@ -386,14 +386,14 @@ button {
 
 .panel h1 {
   margin: 8px 0 0;
-  font-size: 42px;
+  font-size: 44px;
   letter-spacing: 0.16em;
   color: var(--text);
 }
 
 .panel .toca {
   margin: 22px 0 0;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   font-size: 13px;
   font-weight: 750;
   color: var(--accent);
@@ -407,9 +407,26 @@ button {
   color: var(--accent);
 }
 
+.record {
+  display: inline-block;
+  margin: 12px 0 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(232, 255, 71, 0.14);
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+}
+
+.record[hidden] {
+  display: none;
+}
+
 .panel .over-score {
   margin: 12px 0 22px;
   color: var(--muted);
+  letter-spacing: 0.04em;
 }
 
 .actions {
@@ -428,6 +445,12 @@ button {
   padding: 12px 26px;
   font-weight: 800;
   letter-spacing: 0.1em;
+}
+
+#retry:active,
+#keep:active,
+.game-go:active {
+  transform: scale(0.97);
 }
 
 #keep {
