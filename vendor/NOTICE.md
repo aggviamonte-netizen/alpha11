@@ -1,47 +1,34 @@
 # ALPHA-11 Vintage — third-party notices
 
-This folder and `public/arcade/`, `public/vintage/`, and `src/vintage/` include
-adapted copies of MIT-licensed open-source games. Trademarks of Nintendo,
-Sega, Capcom, and The Tetris Company are not used in the player-facing UI.
+Vendored MIT games shipped as static files under `public/vintage/` and `public/arcade/`.
+Player-facing names: STACK, SUDOKU, SPACE, FIGHT. No Nintendo, Sega, Capcom, or
+The Tetris Company trademarks in the UI.
 
-## STACK (bloques)
+## STACK
 
-- Source: https://github.com/lucky845/ts-tetris-game
-- License: MIT (see `lucky845-ts-tetris-game/LICENSE`)
-- Copyright (c) 2023 The Tetris Game Author
-- Adaptation: rebranded in-game as STACK / BLOQUES. The word “Tetris” does
-  not appear in ALPHA-11 UI. Logic ported into `src/vintage/stack/`.
+- Playable file: LittleJS `tetrix.html` from https://github.com/KilledByAPixel/LittleJSArcade (MIT)
+- Copyright (c) 2026 Frank Force
+- UI name: STACK / BLOQUES
+- Also evaluated: https://github.com/lucky845/ts-tetris-game (MIT) — webpack app, not shipped
 
 ## SUDOKU
 
-- Evaluated: https://github.com/tn1ck/super-sudoku (MIT, Copyright (c) 2023 Tom Nick)
-- License copy: `tn1ck-super-sudoku/LICENSE`
-- Adaptation: Super Sudoku is a full React PWA. ALPHA-11 ships a lighter
-  original TypeScript board in `src/vintage/sudoku/` so the hub build stays
-  small. Super Sudoku is credited as the approved reference implementation.
+- Playable file: LittleJS `sudoku.html` (MIT, Frank Force)
+- Evaluated: https://github.com/tn1ck/super-sudoku (MIT, Tom Nick 2023) — React PWA, not shipped
 
-## SPACE (naves)
+## SPACE
 
-- Source: https://github.com/BodhiProtocol/space-shooter
-- License: MIT (see `bodhiprotocol-space-shooter/LICENSE`)
+- https://github.com/BodhiProtocol/space-shooter (MIT)
 - Copyright (c) 2026 BodhiProtocol
-- Adaptation: single-file canvas shooter ported to `src/vintage/space/`
-  with Spanish ALPHA-11 chrome. UI name: SPACE.
+- Single-file copy at `public/vintage/space/`
 
-## FIGHT (pelea)
+## FIGHT
 
-- Source: https://github.com/AaronChelvan/stickfighter
-- License: MIT (see `aaronchelvan-stickfighter/LICENSE`)
+- https://github.com/AaronChelvan/stickfighter (MIT)
 - Copyright (c) 2025 Aaron Chelvan
-- Adaptation: stick-figure fighter only. No Capcom names or sprites.
-  Runtime assets live in `public/vintage/fight/`. UI name: FIGHT.
+- Stick figures only. Copy at `public/vintage/fight/`
 
-## Arcade pack (LittleJS)
+## Arcade pack
 
-- Source: https://github.com/KilledByAPixel/LittleJSArcade
-- License: MIT (see `killedbyapixel-littlejs-arcade/LICENSE`)
-- Copyright (c) 2026 Frank Force
-- Adaptation: a curated static subset is vendored under `public/arcade/`
-  (engine + templates + six generic titles). Served only from this repo.
-  Launcher: `/arcade`. UI names are generic Spanish labels (SERPIENTE,
-  LADRILLOS, MINAS, CAJAS, TRÍO, LUNAR).
+- https://github.com/KilledByAPixel/LittleJSArcade (MIT)
+- Curated static subset in `public/arcade/`

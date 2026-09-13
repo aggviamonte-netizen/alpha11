@@ -1,18 +1,9 @@
 import { resolve } from 'node:path';
 import type { Connect, Plugin } from 'vite';
 import { defineConfig } from 'vite';
+import { partnersApiMock } from './worker/dev/vite-api';
 
-const PAGES = [
-  '/lab',
-  '/jump',
-  '/shift',
-  '/stack',
-  '/sudoku',
-  '/space',
-  '/fight',
-  '/arcade',
-  '/vintage/credits',
-];
+const PAGES = ['/lab', '/jump', '/shift', '/rush'];
 
 function rewritePages(): Connect.NextHandleFunction {
   return (req, _res, next) => {
@@ -20,11 +11,6 @@ function rewritePages(): Connect.NextHandleFunction {
     const q = raw.indexOf('?');
     const path = q === -1 ? raw : raw.slice(0, q);
     const qs = q === -1 ? '' : raw.slice(q);
-    if (path === '/vintage' || path === '/vintage/') {
-      req.url = `/${qs}`;
-      next();
-      return;
-    }
     if (PAGES.includes(path)) req.url = `${path}/${qs}`;
     next();
   };
@@ -44,7 +30,7 @@ function mpaPages(): Plugin {
 
 export default defineConfig({
   base: '/',
-  plugins: [mpaPages()],
+  plugins: [mpaPages(), partnersApiMock()],
   build: {
     rollupOptions: {
       input: {
@@ -52,12 +38,7 @@ export default defineConfig({
         lab: resolve(__dirname, 'lab/index.html'),
         jump: resolve(__dirname, 'jump/index.html'),
         shift: resolve(__dirname, 'shift/index.html'),
-        stack: resolve(__dirname, 'stack/index.html'),
-        sudoku: resolve(__dirname, 'sudoku/index.html'),
-        space: resolve(__dirname, 'space/index.html'),
-        fight: resolve(__dirname, 'fight/index.html'),
-        arcade: resolve(__dirname, 'arcade/index.html'),
-        credits: resolve(__dirname, 'vintage/credits/index.html'),
+        rush: resolve(__dirname, 'rush/index.html'),
       },
     },
   },

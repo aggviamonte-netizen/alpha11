@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ALPHA-11 ads / partners API contract",
+  "version": 1,
+  "ads_networks": [],
+  "marketplace": "planned",
+  "basePath": "/api",
+  "cors": {
+    "allowOrigins": [
+      "https://alpha11.app",
+      "https://www.alpha11.app",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:4173",
+      "http://127.0.0.1:4173",
+      "http://localhost:8787",
+      "http://127.0.0.1:8787"
+    ],
+    "allowOriginPatterns": [
+      "https://*.alpha11.pages.dev",
+      "https://alpha11.pages.dev",
+      "https://alpha11*.workers.dev"
+    ],
+    "allowMethods": ["GET", "POST", "OPTIONS"],
+    "allowHeaders": ["Content-Type"],
+    "maxAgeSec": 86400
+  },
+  "endpoints": {
+    "health": {
+      "method": "GET",
+      "path": "/api/health",
+      "success": {
+        "ok": true,
+        "service": "alpha11-api",
+        "ads_live": false,
+        "ads_networks": [],
+        "marketplace": "planned",
+        "storage": "kv"
+      }
+    },
+    "inventory": {
+      "method": "GET",
+      "path": "/api/inventory",
+      "notes": "Static slot catalog only. Slots are not sold or rendered. No fill rates or revenue figures.",
+      "success": {
+        "ok": true,
+        "live": false,
+        "slots": ["hub_banner", "hub_native", "interstitial_soft"]
+      }
+    },
+    "partnersWaitlist": {
+      "method": "POST",
+      "path": "/api/partners/waitlist",
+      "contentType": "application/json",
+      "body": {
+        "name": { "type": "string", "required": true, "minLength": 1, "maxLength": 120 },
+        "email": { "type": "string", "required": true, "format": "email", "maxLength": 254 },
+        "company": { "type": "string", "required": false, "maxLength": 160 },
+        "budget_band": {
+          "type": "string",
+          "required": true,
+          "enum": ["under_1k", "1k_5k", "5k_20k", "20k_plus", "undisclosed"]
+        },
+        "message": { "type": "string", "required": false, "maxLength": 2000 }
+      },
+      "success": {
+        "status": 201,
+        "body": {
+          "ok": true,
+          "id": "uuid",
+          "stored": "kv"
+        }
+      },
+      "errors": {
+        "400": { "ok": false, "error": "invalid_body" },
+        "405": { "ok": false, "error": "method_not_allowed" },
+        "413": { "ok": false, "error": "payload_too_large" },
+        "415": { "ok": false, "error": "unsupported_media_type" }
+      }
+    },
+    "contract": {
+      "method": "GET",
+      "path": "/api/contract",
+      "notes": "Returns this document so /partners can bind the form without hardcoding field rules."
+    }
+  },
+  "frontend": {
+    "partnersForm": {
+      "when": "Frontend lands GET /partners",
+      "submit": "POST /api/partners/waitlist with the JSON body above (same-origin on alpha11.app).",
+      "example": {
+        "name": "Ada Lovelace",
+        "email": "ada@example.com",
+        "company": "Analytical Engines",
+        "budget_band": "undisclosed",
+        "message": "Direct IO later; no ad tags yet."
+      }
+    }
+  }
+}

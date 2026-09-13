@@ -16,11 +16,10 @@ paintOrb('orb-lab', 3);
 paintOrb('orb-jump', 5);
 paintOrb('orb-shift', 7);
 
-const vintage = document.getElementById('vintage');
-const onVintage =
-  location.hash === '#vintage' || location.pathname.replace(/\/$/, '') === '/vintage';
-if (vintage && onVintage) {
-  vintage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+const rush = document.getElementById('orb-rush');
+if (rush) {
+  rush.textContent = '';
+  rush.title = 'BLOK';
 }
 
 const row = document.getElementById('canon-row');

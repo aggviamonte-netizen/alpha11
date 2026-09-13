@@ -96,17 +96,17 @@ class AudioManager {
     constructor() {
         this.initialized = false;
         this.sounds = {
-            startScreen: new Audio('/vintage/fight/audio/startscreen.mp3'),
-            backgroundMusic1: new Audio('/vintage/fight/audio/world1-background.mp3'),
-            backgroundMusic2: new Audio('/vintage/fight/audio/world2-background.mp3'),
-            backgroundMusic3: new Audio('/vintage/fight/audio/world3-background.mp3'),
-            punch: new Audio('/vintage/fight/audio/punch.mp3'),
-            kick: new Audio('/vintage/fight/audio/punch.mp3'),
-            fireball: new Audio('/vintage/fight/audio/fireball.mp3'),
+            startScreen: new Audio('audio/startscreen.mp3'),
+            backgroundMusic1: new Audio('audio/world1-background.mp3'),
+            backgroundMusic2: new Audio('audio/world2-background.mp3'),
+            backgroundMusic3: new Audio('audio/world3-background.mp3'),
+            punch: new Audio('audio/punch.mp3'),
+            kick: new Audio('audio/punch.mp3'),
+            fireball: new Audio('audio/fireball.mp3'),
             hit: new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'),
-            ko: new Audio('/vintage/fight/audio/ko.mp3'),
+            ko: new Audio('audio/ko.mp3'),
             round: new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'),
-            fight: new Audio('/vintage/fight/audio/fight.mp3')
+            fight: new Audio('audio/fight.mp3')
         };
 
         // Set up music loops
@@ -562,7 +562,7 @@ class Game {
         
         // Set initial background to world1
         this.backgroundImage = new Image();
-        this.backgroundImage.src = '/vintage/fight/images/world1.png';
+        this.backgroundImage.src = 'images/world1.png';
         
         // Ensure canvas is visible
         canvas.style.display = 'block';
@@ -637,7 +637,7 @@ class Game {
         this.currentWorld = randomBg;
         
         this.backgroundImage = new Image();
-        this.backgroundImage.src = `/vintage/fight/images/${this.currentWorld}`;
+        this.backgroundImage.src = `images/${this.currentWorld}`;
         
         // Extract world number and start corresponding music
         const worldNumber = this.currentWorld.match(/world(\d)/)[1];
@@ -728,7 +728,7 @@ class Game {
             
             // Set background back to world1
             this.backgroundImage = new Image();
-            this.backgroundImage.src = '/vintage/fight/images/world1.png';
+            this.backgroundImage.src = 'images/world1.png';
             
             // Return to start screen with mode selection
             this.isStartScreen = true;
@@ -821,7 +821,7 @@ class Game {
         
         // Set background back to world1
         this.backgroundImage = new Image();
-        this.backgroundImage.src = '/vintage/fight/images/world1.png';
+        this.backgroundImage.src = 'images/world1.png';
         
         // Return to start screen with mode selection
         this.isStartScreen = true;
@@ -844,7 +844,7 @@ class Game {
         this.reset();
         this.isAIGame = isSinglePlayer;
         this.player1Name = this.player1Input || "Player 1";
-            this.player2Name = this.isSinglePlayer ? "CPU" : (this.player2Input || "J2");
+        this.player2Name = this.isSinglePlayer ? "Computer" : (this.player2Input || "Player 2");
         
         if (isSinglePlayer) {
             this.ai = new AI(this.player2, this.player1, this);
@@ -1184,7 +1184,7 @@ class Game {
             ctx.font = "36px 'Knewave'";
             ctx.globalAlpha = this.startScreenAlpha;
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillText('Toca para empezar', CANVAS_WIDTH / 2, CANVAS_HEIGHT * 0.6);
+            ctx.fillText('Press any key to start', CANVAS_WIDTH / 2, CANVAS_HEIGHT * 0.6);
             ctx.globalAlpha = 1;
         } else if (!this.nameInput) {
             // Draw mode selection buttons
