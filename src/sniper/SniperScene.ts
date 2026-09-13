@@ -20,10 +20,11 @@ export const W = 390;
 export const H = 844;
 
 const ROUND_S = 48;
-const AIM_LIFT = 78;
-const COOLDOWN = 300;
-const WIND_PX = 10;
-const STEADY_S = 0.78;
+const TOUCH_LIFT = 56;
+const COOLDOWN = 260;
+const WIND_PX = 8;
+const STEADY_S = 0.7;
+const HIT_PAD = 16;
 
 type Phase = 'start' | 'play' | 'over';
 type Lane = 0 | 1 | 2;
@@ -45,9 +46,9 @@ type Slot = { lane: Lane; x: number; taken: boolean };
 type Mote = { g: Phaser.GameObjects.Arc; vx: number; vy: number };
 
 const LANE = [
-  { y: 556, cover: 58, r: 40, pts: 60, depth: 18 },
-  { y: 418, cover: 46, r: 30, pts: 110, depth: 13 },
-  { y: 298, cover: 34, r: 22, pts: 170, depth: 8 },
+  { y: 548, cover: 62, r: 48, pts: 60, depth: 18 },
+  { y: 412, cover: 50, r: 38, pts: 110, depth: 13 },
+  { y: 292, cover: 38, r: 30, pts: 170, depth: 8 },
 ] as const;
 
 const SLOT_X: readonly number[][] = [
@@ -60,7 +61,11 @@ let skipStart = false;
 let nextId = 1;
 
 function dummyRadius(tier: number, lane: Lane): number {
-  return LANE[lane].r * (0.78 + tier * 0.032);
+  return LANE[lane].r * (0.88 + tier * 0.028);
+}
+
+function pointerLift(p: Phaser.Input.Pointer): number {
+  return p.wasTouch ? TOUCH_LIFT : 0;
 }
 
 function windGlyph(w: number): string {
@@ -213,6 +218,7 @@ export class SniperScene extends Phaser.Scene {
     this.syncHud();
     this.trySpawn();
     this.trySpawn();
+    this.trySpawn();
     this.tweens.add({
       targets: this.hint,
       alpha: 0,
@@ -222,14 +228,15 @@ export class SniperScene extends Phaser.Scene {
   }
 
   private track(p: Phaser.Input.Pointer): void {
+    const lift = pointerLift(p);
     this.aimX = Phaser.Math.Clamp(p.worldX, 28, W - 28);
-    this.aimY = Phaser.Math.Clamp(p.worldY - AIM_LIFT, 120, 640);
+    this.aimY = Phaser.Math.Clamp(p.worldY - lift, 120, 640);
   }
 
   private swayAmp(): number {
-    const grow = 9 + Math.min(10, (ROUND_S - this.left) * 0.22);
-    const calm = 1 - Math.min(0.72, this.hold / STEADY_S);
-    return grow * (this.aiming ? calm : 1);
+    const grow = 5 + Math.min(8, (ROUND_S - this.left) * 0.16);
+    const calm = 1 - Math.min(0.78, this.hold / STEADY_S);
+    return grow * (this.aiming ? calm : 0.55);
   }
 
   private sway(): { x: number; y: number } {
@@ -243,7 +250,10 @@ export class SniperScene extends Phaser.Scene {
 
   private reticle(): { x: number; y: number } {
     const s = this.sway();
-    return { x: this.aimX + s.x, y: this.aimY + s.y };
+    return {
+      x: this.aimX + s.x + this.wind * WIND_PX,
+      y: this.aimY + s.y,
+    };
   }
 
   private fire(): void {
@@ -253,8 +263,9 @@ export class SniperScene extends Phaser.Scene {
       return;
     }
     this.coolUntil = this.time.now + COOLDOWN;
+    this.track(this.input.activePointer);
     const ret = this.reticle();
-    const impactX = Phaser.Math.Clamp(ret.x + this.wind * WIND_PX, 12, W - 12);
+    const impactX = Phaser.Math.Clamp(ret.x, 12, W - 12);
     const impactY = Phaser.Math.Clamp(ret.y, 110, 680);
     sfxFire();
     this.cameras.main.shake(70, 0.006);
@@ -272,10 +283,10 @@ export class SniperScene extends Phaser.Scene {
     let bestD = Infinity;
     for (const d of this.dummies) {
       if (!d.live) continue;
-      const dx = x - d.x;
-      const dy = y - d.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist <= d.r && dist < bestD) {
+      const tx = d.root.x;
+      const ty = d.root.y;
+      const dist = Math.hypot(x - tx, y - ty);
+      if (dist <= d.r + HIT_PAD && dist < bestD) {
         best = d;
         bestD = dist;
       }
@@ -287,7 +298,7 @@ export class SniperScene extends Phaser.Scene {
     d.live = false;
     const slot = this.slots[d.slot];
     if (slot) slot.taken = false;
-    const dist = Math.hypot(x - d.x, y - d.y);
+    const dist = Math.hypot(x - d.root.x, y - d.root.y);
     const bull = dist <= d.r * 0.32;
     this.combo += 1;
     const lanePts = LANE[d.lane].pts;
@@ -346,8 +357,8 @@ export class SniperScene extends Phaser.Scene {
 
   private trySpawn(): void {
     const elapsed = ROUND_S - this.left;
-    const cap = Math.min(4, 2 + Math.floor(elapsed / 16));
-    const gap = Math.max(420, 920 - elapsed * 12);
+    const cap = Math.min(4, 3 + Math.floor(elapsed / 20));
+    const gap = Math.max(380, 780 - elapsed * 11);
     this.nextSpawn = this.time.now + gap;
     if (this.left <= 0) return;
     const live = this.dummies.filter((d) => d.live).length;
@@ -376,11 +387,12 @@ export class SniperScene extends Phaser.Scene {
     const standY = spec.y - spec.cover * 0.55 - r * 0.15;
     const hideY = spec.y + 8;
     const root = this.add.container(slot.x, hideY).setDepth(spec.depth);
-    const stick = this.add.rectangle(0, r * 0.72, Math.max(4, r * 0.16), r * 0.7, 0x2a2d38, 1);
-    stick.setStrokeStyle(1, 0xf4f1ea, 0.2);
+    const halo = this.add.circle(0, 0, r * 1.35, creature(tier).color, 0.28);
+    const stick = this.add.rectangle(0, r * 0.72, Math.max(5, r * 0.18), r * 0.78, 0x2a2d38, 1);
+    stick.setStrokeStyle(1, 0xf4f1ea, 0.28);
     const body = drawCreature(this, 0, 0, tier, r);
     body.setDepth(0);
-    root.add([stick, body]);
+    root.add([halo, stick, body]);
     root.setAlpha(0.2);
     const dummy: Dummy = {
       id: nextId++,
@@ -402,8 +414,8 @@ export class SniperScene extends Phaser.Scene {
       duration: 220,
       ease: 'Back.out',
     });
-    const stay = Phaser.Math.Between(1600, 2800) - Math.min(700, (ROUND_S - this.left) * 18);
-    this.time.delayedCall(Math.max(980, stay), () => this.duck(dummy));
+    const stay = Phaser.Math.Between(2000, 3400) - Math.min(800, (ROUND_S - this.left) * 16);
+    this.time.delayedCall(Math.max(1200, stay), () => this.duck(dummy));
   }
 
   private duck(d: Dummy): void {
@@ -506,22 +518,22 @@ export class SniperScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(0);
     g.fillStyle(0x101018, 1);
     g.fillRect(0, 0, W, H);
-    g.fillStyle(0xe8ff47, 0.05);
-    g.fillEllipse(W * 0.5, 88, 280, 70);
-    g.fillStyle(0x8b9bff, 0.06);
-    g.fillCircle(40, 200, 90);
-    g.fillStyle(0x6ee7ff, 0.05);
-    g.fillCircle(W - 20, 260, 110);
-    g.fillStyle(0xff8bd1, 0.04);
-    g.fillCircle(W * 0.5, 760, 160);
+    g.fillStyle(0xe8ff47, 0.08);
+    g.fillEllipse(W * 0.5, 88, 300, 80);
+    g.fillStyle(0x8b9bff, 0.1);
+    g.fillCircle(36, 210, 110);
+    g.fillStyle(0x6ee7ff, 0.08);
+    g.fillCircle(W - 16, 268, 130);
+    g.fillStyle(0xff8bd1, 0.07);
+    g.fillCircle(W * 0.5, 760, 180);
 
-    g.fillStyle(0x1a1d2a, 1);
+    g.fillStyle(0x1c2030, 1);
     g.fillRect(0, 118, W, 200);
-    g.fillStyle(0x232736, 1);
+    g.fillStyle(0x2a3044, 1);
     g.fillRoundedRect(28, 138, W - 56, 168, 18);
-    g.fillStyle(0x2c3144, 1);
+    g.fillStyle(0x353c54, 1);
     g.fillRoundedRect(48, 156, W - 96, 128, 14);
-    g.lineStyle(2, 0xe8ff47, 0.18);
+    g.lineStyle(2, 0xe8ff47, 0.28);
     g.strokeRoundedRect(48, 156, W - 96, 128, 14);
 
     this.add
@@ -530,17 +542,15 @@ export class SniperScene extends Phaser.Scene {
         fontSize: '13px',
         color: '#E8FF47',
         fontStyle: 'bold',
-        letterSpacing: 4,
       })
       .setOrigin(0.5)
-      .setAlpha(0.72)
+      .setAlpha(0.82)
       .setDepth(1);
     this.add
       .text(W / 2, 210, 'OPERATIVO DE JUGUETE', {
         fontFamily: UI_FONT,
         fontSize: '9px',
         color: '#F4F1EA',
-        letterSpacing: 3,
       })
       .setOrigin(0.5)
       .setAlpha(0.38)
@@ -554,11 +564,13 @@ export class SniperScene extends Phaser.Scene {
     rings.lineBetween(W / 2 - 8, 232, W / 2 + 8, 232);
     rings.lineBetween(W / 2, 224, W / 2, 240);
 
-    g.fillStyle(0x141822, 1);
+    g.fillStyle(0x161a26, 1);
     g.fillRect(0, 330, W, H - 330);
+    g.fillStyle(0x8b9bff, 0.05);
+    g.fillTriangle(W / 2, 330, -20, H, W + 20, H);
 
     const floor = this.add.graphics().setDepth(1);
-    floor.lineStyle(1, 0xf4f1ea, 0.07);
+    floor.lineStyle(1, 0x6ee7ff, 0.1);
     for (let i = 0; i < 8; i++) {
       const t = i / 7;
       const y = 340 + t * 420;
@@ -631,7 +643,6 @@ export class SniperScene extends Phaser.Scene {
         fontSize: '12px',
         color: '#8B9BFF',
         fontStyle: 'bold',
-        letterSpacing: 3,
       })
       .setOrigin(0.5)
       .setDepth(6);
@@ -642,7 +653,6 @@ export class SniperScene extends Phaser.Scene {
         fontSize: '13px',
         color: '#E8FF47',
         fontStyle: 'bold',
-        letterSpacing: 4,
       })
       .setOrigin(0.5)
       .setDepth(21);
@@ -654,11 +664,13 @@ export class SniperScene extends Phaser.Scene {
     const y = spec.y;
     const h = spec.cover;
     const inset = 22 + (2 - lane) * 18;
-    b.fillStyle(color, 0.96);
+    b.fillStyle(color, 0.98);
     b.fillRoundedRect(inset, y - h * 0.15, W - inset * 2, h, 12);
-    b.fillStyle(0xffffff, 0.06);
-    b.fillRoundedRect(inset + 8, y - h * 0.1, W - inset * 2 - 16, 8, 4);
-    b.lineStyle(2, 0xf4f1ea, 0.16);
+    b.fillStyle(0xffffff, 0.1);
+    b.fillRoundedRect(inset + 8, y - h * 0.1, W - inset * 2 - 16, 10, 4);
+    b.fillStyle(0xe8ff47, 0.12);
+    b.fillRoundedRect(inset + 10, y - h * 0.12, W - inset * 2 - 20, 5, 3);
+    b.lineStyle(2, 0x8b9bff, 0.28);
     b.strokeRoundedRect(inset, y - h * 0.15, W - inset * 2, h, 12);
     const tags = ['12 m', '24 m', '36 m'] as const;
     this.add
