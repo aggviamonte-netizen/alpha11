@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import type { Connect, Plugin } from 'vite';
 import { defineConfig } from 'vite';
+import { partnersApiMock } from './worker/dev/vite-api';
 
 const PAGES = ['/lab', '/jump', '/shift', '/rush'];
 
@@ -29,7 +30,7 @@ function mpaPages(): Plugin {
 
 export default defineConfig({
   base: '/',
-  plugins: [mpaPages()],
+  plugins: [mpaPages(), partnersApiMock()],
   build: {
     rollupOptions: {
       input: {

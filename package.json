@@ -5,14 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "dev:worker": "npm run build && wrangler dev",
+    "build": "wrangler types worker/worker-configuration.d.ts && tsc --noEmit && tsc --noEmit -p worker/tsconfig.json && vite build",
+    "preview": "vite preview",
+    "test": "tsx --test worker/test/api.test.ts",
+    "test:api": "tsx --test worker/test/api.test.ts",
+    "types:worker": "wrangler types worker/worker-configuration.d.ts",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "phaser": "^3.88.2"
   },
   "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.20.5",
     "typescript": "^5.8.2",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "wrangler": "^4.40.0"
   }
 }

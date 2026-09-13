@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "alpha11",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  // Hub / game HTML stays on the existing Vite + Pages (or Workers Assets) path.
+  // The Worker only intercepts /api/* so this PR does not rewrite hub pages.
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "ADS_LIVE": "false"
+  },
+  // Existing account KV (title: alpha11-waitlist). Local `wrangler dev` uses a file-backed mock of this binding.
+  "kv_namespaces": [
+    {
+      "binding": "WAITLIST",
+      "id": "86685a78b0e44830be548f12dcba3876"
+    }
+  ]
+  // Secrets (not listed here — use `wrangler secret put`, never commit values):
+  //   PARTNERS_WEBHOOK  optional URL; each accepted waitlist row is POSTed as JSON after store
+}

@@ -2,3 +2,7 @@ node_modules
 dist
 .DS_Store
 *.log
+.data
+.dev.vars
+.wrangler
+worker/worker-configuration.d.ts
