@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { creature, radiusPx } from './canon';
 import { el } from './dom';
+import { drawPulseCraft, poseCraft, PULSO, type CraftRig } from './drawCraft';
 import { burstDots, pulseRing, screenWash, squashTo } from './juice';
 import { loadJumpBest, saveJumpBest } from './jumpScore';
 import { sfxGate, sfxJump, sfxLand, sfxOver, unlockSfx } from './sfx';
-import { drawCreature, paintLabBackdrop } from './sprites';
+import { paintLabBackdrop } from './sprites';
 
 export const W = 390;
 export const H = 844;
@@ -17,6 +17,7 @@ const RAIL = 40;
 const PIPE_W = 68;
 const INTERVAL = 268;
 const HIT = 0.66;
+const CRAFT_R = 22;
 
 type Phase = 'start' | 'play' | 'over';
 
@@ -48,7 +49,7 @@ export class JumpScene extends Phaser.Scene {
   private vy = 0;
   private traveled = 0;
   private player!: Phaser.GameObjects.Container;
-  private glow!: Phaser.GameObjects.Arc;
+  private craft!: CraftRig;
   private shadow!: Phaser.GameObjects.Ellipse;
   private gates: Gate[] = [];
   private motes: Mote[] = [];
@@ -78,11 +79,11 @@ export class JumpScene extends Phaser.Scene {
     this.flapping = false;
 
     this.paintWorld();
-    this.shadow = this.add.ellipse(PX, this.py + radiusPx(5) * 0.86, 28, 10, 0x000000, 0.22).setDepth(18);
-    this.player = drawCreature(this, PX, this.py, 5);
+    this.shadow = this.add.ellipse(PX, this.py + CRAFT_R * 0.86, 28, 10, 0x000000, 0.22).setDepth(18);
+    this.craft = drawPulseCraft(this, PX, this.py);
+    this.player = this.craft.root;
     this.player.setDepth(20);
-    this.glow = this.add.circle(PX, this.py, radiusPx(5) * 1.5, creature(5).color, 0.18);
-    this.glow.setDepth(19);
+    this.craft.glow.setDepth(19);
 
     this.input.on('pointerdown', () => {
       unlockSfx();
@@ -113,30 +114,27 @@ export class JumpScene extends Phaser.Scene {
     if (this.phase !== 'play') {
       const y = this.py + Math.sin(this.pulse * 2.4) * 5;
       this.player.setPosition(PX, y);
-      this.glow.setPosition(PX, y);
-      this.glow.setAlpha(0.16 + Math.sin(this.pulse * 3) * 0.05);
-      this.shadow.setPosition(PX, y + radiusPx(5) * 0.86);
+      poseCraft(this.craft, this.vy, this.pulse, false);
+      this.shadow.setPosition(PX, y + CRAFT_R * 0.86);
       return;
     }
 
     if (this.time.now < this.frozenUntil) {
       this.player.setPosition(PX, this.py);
-      this.glow.setPosition(PX, this.py);
-      this.shadow.setPosition(PX, this.py + radiusPx(5) * 0.86);
+      poseCraft(this.craft, this.vy, this.pulse, this.flapping);
+      this.shadow.setPosition(PX, this.py + CRAFT_R * 0.86);
       return;
     }
 
     this.vy = Math.min(this.vy + GRAVITY * s, MAX_FALL);
     this.py += this.vy * s;
     this.player.setPosition(PX, this.py);
-    this.player.setRotation(Phaser.Math.Clamp(this.vy / 980, -0.5, 0.72));
+    poseCraft(this.craft, this.vy, this.pulse, this.flapping);
     if (!this.flapping) {
       const t = Phaser.Math.Clamp(this.vy / MAX_FALL, -0.75, 1);
       this.player.setScale(1 - t * 0.1, 1 + t * 0.13);
     }
-    this.glow.setPosition(PX, this.py);
-    this.glow.setAlpha(0.18 + Math.max(0, -this.vy) / 1800);
-    this.shadow.setPosition(PX, this.py + radiusPx(5) * 0.86);
+    this.shadow.setPosition(PX, this.py + CRAFT_R * 0.86);
     this.shadow.setAlpha(0.12 + Math.max(0, this.vy) / 2800);
 
     const speed = this.scrollSpeed();
@@ -200,7 +198,7 @@ export class JumpScene extends Phaser.Scene {
         });
       },
     });
-    burstDots(this, PX, this.py + 10, creature(5).color, 7);
+    burstDots(this, PX, this.py + 10, PULSO.color, 7);
   }
 
   private scrollSpeed(): number {
@@ -339,7 +337,7 @@ export class JumpScene extends Phaser.Scene {
   private spawnTrail(): void {
     if (this.time.now - this.lastTrail < 52) return;
     this.lastTrail = this.time.now;
-    const dot = this.add.circle(PX - 12, this.py + 4, 3.4, creature(5).color, 0.32).setDepth(18);
+    const dot = this.add.circle(PX - 12, this.py + 4, 3.4, PULSO.color, 0.32).setDepth(18);
     this.tweens.add({
       targets: dot,
       x: PX - 50,
@@ -367,7 +365,7 @@ export class JumpScene extends Phaser.Scene {
   }
 
   private hitWorld(): boolean {
-    const r = radiusPx(5) * HIT;
+    const r = CRAFT_R * HIT;
     if (this.py - r <= RAIL || this.py + r >= H - RAIL) return true;
     for (const gate of this.gates) {
       const topH = gate.gapY - gate.gap / 2;
@@ -403,14 +401,14 @@ export class JumpScene extends Phaser.Scene {
   private syncHud(): void {
     el('score').textContent = String(this.score);
     el('best').textContent = String(this.best);
-    const c = creature(5);
     const chip = document.getElementById('next-chip');
     if (chip) {
-      chip.style.background = c.hex;
-      chip.textContent = c.emoji;
-      chip.dataset.kind = c.kind;
+      chip.style.background = PULSO.hex;
+      chip.textContent = '';
+      chip.classList.add('pulso-chip');
+      delete chip.dataset.kind;
     }
     const code = document.getElementById('next-code');
-    if (code) code.textContent = c.code;
+    if (code) code.textContent = PULSO.code;
   }
 }
