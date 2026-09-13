@@ -60,6 +60,7 @@ export function paintArena(scene: Phaser.Scene): void {
   g.strokeRoundedRect(INNER_L + 6, WELL_TOP + 8, wellW - 12, wellH - 16, 14);
 }
 
+/** LAB-only vegetable silhouettes. Other games must use their own casts. */
 export function drawCreature(
   scene: Phaser.Scene,
   x: number,

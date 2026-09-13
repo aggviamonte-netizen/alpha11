@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { creature } from '../game/canon';
 import { el } from '../game/dom';
 import { burstDots, floatLabel, pulseRing, screenWash, squashTo, UI_FONT } from '../game/juice';
-import { drawCreature } from '../game/sprites';
+import { drawRangeTarget, rangeMark } from './drawTarget';
 import { loadSniperBest, saveSniperBest } from './score';
 import {
   sfxBull,
@@ -308,7 +307,7 @@ export class SniperScene extends Phaser.Scene {
     this.score += pts;
     this.syncHud();
 
-    const col = creature(d.tier).color;
+    const col = rangeMark(d.tier).color;
     burstDots(this, d.x, d.y, col, bull ? 12 : 8);
     burstDots(this, d.x, d.y, 0xe8ff47, 5);
     squashTo(this, d.root, 1.28, 0.62, 140);
@@ -387,12 +386,11 @@ export class SniperScene extends Phaser.Scene {
     const standY = spec.y - spec.cover * 0.55 - r * 0.15;
     const hideY = spec.y + 8;
     const root = this.add.container(slot.x, hideY).setDepth(spec.depth);
-    const halo = this.add.circle(0, 0, r * 1.35, creature(tier).color, 0.28);
     const stick = this.add.rectangle(0, r * 0.72, Math.max(5, r * 0.18), r * 0.78, 0x2a2d38, 1);
     stick.setStrokeStyle(1, 0xf4f1ea, 0.28);
-    const body = drawCreature(this, 0, 0, tier, r);
+    const body = drawRangeTarget(this, 0, 0, tier, r);
     body.setDepth(0);
-    root.add([halo, stick, body]);
+    root.add([stick, body]);
     root.setAlpha(0.2);
     const dummy: Dummy = {
       id: nextId++,

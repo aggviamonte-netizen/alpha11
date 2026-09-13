@@ -51,10 +51,10 @@ npm run deploy
 - Vintage games are vendored MIT static files under `public/vintage/` (credits: `/vintage/credits`, `vendor/NOTICE.md`).
 - **LAB** (`/lab`): 11 vegetable tiers (pea → Alpha veggie) with distinct silhouettes. Same-tier overlap ~200ms merges up. Keys: `alpha11_lab_score` / `alpha11_lab_best`.
 - **JUMP** (`/jump`): vertical flyer. Pilot the original ALPHA-11 PULSO craft. Drag to fly, tap or DISPARO to shoot asteroids and sentries. Score = distance + kills. Best: `alpha11_jump_best`.
-- **SHIFT** (`/shift`): 4×4 swipe merge, A1 → higher vegetable tiers. Keys: `alpha11_shift_score` / `alpha11_shift_best`.
+- **SHIFT** (`/shift`): 4×4 swipe merge, T1 → T11 tessera pieces (not LAB veggies). Keys: `alpha11_shift_score` / `alpha11_shift_best`.
 - **RUSH** (`/rush`): BLOK 3D speed platformer — chase cam, ramps, núcleos. Touch SALTO / TURBO. Best: `alpha11_rush_best`.
-- **KICK** (`/kick`): penalty shootout. Drag to aim, tap to shoot, read the keeper tell. Streak best: `alpha11_kick_best`.
-- **SNIPER** (`/sniper`): hold to aim, release to fire. Best: `alpha11_sniper_best`.
+- **KICK** (`/kick`): penalty shootout with football kicker + keeper. Drag to aim, tap to shoot, read the keeper tell. Streak best: `alpha11_kick_best`.
+- **SNIPER** (`/sniper`): hold to aim, release to fire at range marks. Best: `alpha11_sniper_best`.
 
 ## Advertisers / backend
 
