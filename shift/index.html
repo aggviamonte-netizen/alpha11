@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" translate="no">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0B0B0C" />
+    <meta name="google" content="notranslate" />
     <meta name="description" content="ALPHA-11 SHIFT — puzzle" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -12,11 +13,14 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body class="lab-body">
     <div class="stage">
-      <header class="hud">
+      <header class="hud hud-simple">
         <div>
           <div class="title">ALPHA-11 SHIFT</div>
           <div class="next" id="hint">Une criaturas</div>
@@ -28,14 +32,15 @@
       </header>
       <div id="game"></div>
       <div class="overlay" id="overlay-start">
-        <div class="panel">
-          <h1>ALPHA-11 SHIFT</h1>
+        <div class="panel start-panel">
+          <p class="eyebrow">ALPHA-11</p>
+          <h1>SHIFT</h1>
           <p class="toca">TOCA</p>
         </div>
       </div>
       <div class="overlay" id="overlay-over" hidden>
-        <div class="panel">
-          <h1>ALPHA-11 SHIFT</h1>
+        <div class="panel over-panel">
+          <p class="eyebrow">ALPHA-11 SHIFT</p>
           <p class="fin" id="over-title">FIN</p>
           <p class="over-score" id="over-score"></p>
           <div class="actions">

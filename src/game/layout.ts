@@ -1,0 +1,9 @@
+export const W = 390;
+export const H = 844;
+export const WALL = 16;
+export const INNER_L = 26;
+export const INNER_R = W - 26;
+export const FLOOR_Y = 668;
+export const DROP_Y = 188;
+export const DANGER_Y = 236;
+export const WELL_TOP = DROP_Y - 24;

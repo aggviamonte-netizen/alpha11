@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { H, LabScene, W } from './LabScene';
+import { LabScene } from './LabScene';
+import { H, W } from './layout';
 
 export function startLab(parent: string | HTMLElement): Phaser.Game {
   return new Phaser.Game({
