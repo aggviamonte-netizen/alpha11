@@ -11,7 +11,7 @@ npm i
 npm run dev
 ```
 
-Open `/` (hub), `/lab`, `/jump`, `/shift`.
+Open `/` (hub), `/lab`, `/jump`, `/shift`, plus Vintage routes `/stack`, `/sudoku`, `/space`, `/fight`, `/arcade`.
 
 ## Build
 
@@ -27,11 +27,12 @@ Deploy the `dist` folder to Cloudflare Pages.
 - Output directory: `dist`
 - Custom domain: `alpha11.app`
 
-Cloudflare Pages `_redirects` maps `/lab`, `/jump`, and `/shift` onto the multi-page folders.
+Cloudflare Pages `_redirects` maps `/lab`, `/jump`, `/shift`, and Vintage routes onto the multi-page folders.
 
 ## Play
 
-- Hub cards **LAB**, **JUMP**, **SHIFT** all open playable games. Footer: Gratis · Añade a inicio de pantalla.
+- Hub cards **LAB**, **JUMP**, **SHIFT** plus Vintage (**STACK**, **SUDOKU**, **SPACE**, **FIGHT**, **ARCADE**). Footer: Gratis · Añade a inicio de pantalla.
+- Vintage sources and licenses: `vendor/NOTICE.md`, `/vintage/credits`.
 - **LAB** (`/lab`): 11 canon creatures A1–A11. Same-tier overlap ~200ms merges up. Keys: `alpha11_lab_score` / `alpha11_lab_best`.
 - **JUMP** (`/jump`): one-touch flap runner as A5 Pulse through lab glass / beams. Score = distance. Best: `alpha11_jump_best`.
 - **SHIFT** (`/shift`): 4×4 swipe merge, A1 → higher tiers (canon colors/emoji). Keys: `alpha11_shift_score` / `alpha11_shift_best`.

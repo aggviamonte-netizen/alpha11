@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0B0C" />
+    <meta name="google" content="notranslate" />
+    <meta name="description" content="ALPHA-11 SPACE — naves" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ALPHA-11 SPACE" />
+    <title>ALPHA-11 SPACE</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="lab-body">
+    <div class="stage vin-stage space-stage">
+      <header class="hud vin-hud">
+        <a class="hud-brand" href="/">
+          <span>ALPHA-11 SPACE</span>
+        </a>
+        <div class="hud-scores">
+          <div>
+            <span class="lbl">SCORE</span>
+            <b id="hScore">0</b>
+          </div>
+          <div class="hud-split"></div>
+          <div>
+            <span class="lbl">BEST</span>
+            <b id="best">0</b>
+          </div>
+        </div>
+        <div class="hud-next">
+          <span class="lbl">OLA</span>
+          <b id="hWave">1</b>
+        </div>
+      </header>
+      <div class="mt space-modes">
+        <button type="button" id="bK">Chicos</button>
+        <button type="button" id="bA" class="active">Adulto</button>
+      </div>
+      <div id="wrap" class="space-wrap">
+        <canvas id="c"></canvas>
+        <div class="overlay" id="ov">
+          <div class="panel">
+            <p class="eyebrow">ALPHA-11</p>
+            <h1>SPACE</h1>
+            <p class="toca">DESLIZA PARA MOVER</p>
+            <button type="button" id="space-start">JUGAR</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/space.ts"></script>
+  </body>
+</html>

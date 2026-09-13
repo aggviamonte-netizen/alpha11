@@ -437,7 +437,8 @@ button {
 }
 
 #retry,
-#keep {
+#keep,
+#space-start {
   border: 0;
   border-radius: 999px;
   background: var(--accent);
@@ -461,4 +462,443 @@ button {
 
 #keep[hidden] {
   display: none;
+}
+
+.vintage {
+  width: 100%;
+  margin-top: 36px;
+}
+
+.vintage-kicker {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  letter-spacing: 0.28em;
+  font-size: 11px;
+  text-transform: lowercase;
+}
+
+.vintage-title {
+  margin: 6px 0 18px;
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 0.2em;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.vintage-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.vintage-group h3 {
+  margin: 8px 2px 0;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.game-card[data-game='stack'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(255, 184, 107, 0.18), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card[data-game='sudoku'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(232, 255, 71, 0.16), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card[data-game='space'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(110, 231, 255, 0.16), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card[data-game='fight'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(255, 139, 209, 0.18), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card[data-game='arcade'] {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(196, 181, 253, 0.2), transparent 48%),
+    linear-gradient(180deg, #19191e, #121216);
+}
+
+.game-card[data-game='stack'] .game-go {
+  background: #ffb86b;
+  box-shadow: 0 6px 18px rgba(255, 184, 107, 0.2);
+}
+
+.game-card[data-game='sudoku'] .game-go {
+  background: var(--accent);
+}
+
+.game-card[data-game='space'] .game-go {
+  background: var(--cyan);
+  box-shadow: 0 6px 18px rgba(110, 231, 255, 0.18);
+}
+
+.game-card[data-game='fight'] .game-go {
+  background: var(--pink);
+  box-shadow: 0 6px 18px rgba(255, 139, 209, 0.2);
+}
+
+.game-card[data-game='arcade'] .game-go {
+  background: #c4b5fd;
+  color: var(--bg);
+  box-shadow: 0 6px 18px rgba(196, 181, 253, 0.2);
+}
+
+.vintage-credits {
+  display: block;
+  margin: 8px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.vin-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 12px;
+}
+
+.vin-hud {
+  pointer-events: auto;
+}
+
+.vin-hud .hud-brand {
+  pointer-events: auto;
+}
+
+.vin-mini {
+  justify-self: end;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.vin-board-wrap {
+  margin-top: 72px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.vin-meta {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+
+.vin-pad {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 14px 12px 8px;
+}
+
+.vin-key {
+  min-height: 52px;
+  border: 0;
+  border-radius: 16px;
+  background: #1b1b20;
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  box-shadow: inset 0 1px 0 rgba(244, 241, 234, 0.06);
+}
+
+.vin-key-acc {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.vin-key:active {
+  transform: scale(0.97);
+}
+
+.sudo-diffs,
+.sudo-nums {
+  width: min(100%, 360px);
+  display: grid;
+  gap: 8px;
+}
+
+.sudo-diffs {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 72px;
+}
+
+.sudo-board {
+  width: min(100%, 360px);
+  margin: 12px 0;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+  padding: 6px;
+  border-radius: 16px;
+  background: #101014;
+}
+
+.sudo-cell {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 6px;
+  background: #17171c;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.sudo-cell.sudo-left {
+  box-shadow: inset 2px 0 0 rgba(232, 255, 71, 0.28);
+}
+
+.sudo-cell.sudo-top {
+  box-shadow: inset 0 2px 0 rgba(232, 255, 71, 0.28);
+}
+
+.sudo-cell.sudo-left.sudo-top {
+  box-shadow:
+    inset 2px 0 0 rgba(232, 255, 71, 0.28),
+    inset 0 2px 0 rgba(232, 255, 71, 0.28);
+}
+
+.sudo-given {
+  color: var(--accent);
+}
+
+.sudo-on {
+  outline: 2px solid var(--accent);
+}
+
+.sudo-bad {
+  color: #ff6b8a;
+}
+
+.sudo-nums {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.sudo-diffs button,
+.sudo-nums button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: #1b1b20;
+  font-weight: 750;
+}
+
+.sudo-diffs button.is-on,
+.sudo-nums button:active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.space-stage {
+  height: min(100dvh, var(--h));
+}
+
+.space-modes {
+  position: absolute;
+  top: 58px;
+  z-index: 2;
+  display: flex;
+}
+
+.space-modes button {
+  font-size: 11px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+.space-modes button:first-child {
+  border-radius: 12px 0 0 12px;
+}
+
+.space-modes button:last-child {
+  border-radius: 0 12px 12px 0;
+  border-left: none;
+}
+
+.space-modes button.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.space-wrap {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.space-wrap canvas {
+  display: block;
+}
+
+.space-wrap .overlay {
+  position: absolute;
+}
+
+.credits-shell {
+  align-items: stretch;
+}
+
+.credits {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.credits h3 {
+  margin: 18px 0 6px;
+  color: var(--accent);
+  letter-spacing: 0.16em;
+  font-size: 13px;
+}
+
+.credits a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fight-stage {
+  padding-top: 0;
+}
+
+.fight-body .game-wrapper {
+  width: 100%;
+  margin-top: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fight-body #player1-controls,
+.fight-body #player2-controls {
+  display: none;
+}
+
+.fight-body #game-container {
+  width: 100%;
+  position: relative;
+}
+
+.fight-body .game-title {
+  display: none;
+}
+
+.fight-body .game-content {
+  position: relative;
+  width: 100%;
+}
+
+.fight-body canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #101014;
+  border-radius: 12px;
+}
+
+.fight-body #menu-overlay,
+.fight-body #pause-menu,
+.fight-body #game-over-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(90%, 320px);
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--card);
+  z-index: 4;
+  text-align: center;
+}
+
+.fight-body #pause-menu,
+.fight-body #game-over-menu {
+  display: none;
+}
+
+.fight-body .overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 11, 12, 0.5);
+  display: none;
+  z-index: 3;
+}
+
+.fight-body .input-group,
+.fight-body #single-player-inputs,
+.fight-body #multiplayer-inputs {
+  display: none;
+}
+
+.fight-body .menu-button,
+.fight-body .player-name-input {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 8px auto;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 0;
+  font-weight: 800;
+}
+
+.fight-body .menu-button {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.fight-body .back-button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.fight-body .player-name-input {
+  background: #17171c;
+  color: var(--text);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.fight-body .input-label,
+.fight-body .pause-title,
+.fight-body #winner-message {
+  color: var(--text);
+}
+
+.fight-body .pause-instruction {
+  display: none;
+}
+
+.fight-pad {
+  grid-template-columns: repeat(4, 1fr);
 }

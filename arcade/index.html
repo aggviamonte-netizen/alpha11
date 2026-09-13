@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0B0C" />
+    <meta name="google" content="notranslate" />
+    <meta name="description" content="ALPHA-11 Arcade pack" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ALPHA-11 ARCADE" />
+    <title>ALPHA-11 ARCADE</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <a class="logo" href="/">ALPHA<span>-11</span></a>
+      <p class="tagline">arcade pack</p>
+      <section class="games vintage-group">
+        <h3>Curado · estático</h3>
+        <a class="game-card" data-game="arcade" href="/arcade/games/snake.html">
+          <span class="game-orb" aria-hidden="true">○</span>
+          <span class="game-meta"><strong>SERPIENTE</strong><em>snake</em></span>
+          <span class="game-go">JUGAR</span>
+        </a>
+        <a class="game-card" data-game="stack" href="/arcade/games/brickout.html">
+          <span class="game-orb" aria-hidden="true">▬</span>
+          <span class="game-meta"><strong>LADRILLOS</strong><em>romper</em></span>
+          <span class="game-go">JUGAR</span>
+        </a>
+        <a class="game-card" data-game="sudoku" href="/arcade/games/minesweeper.html">
+          <span class="game-orb" aria-hidden="true">·</span>
+          <span class="game-meta"><strong>MINAS</strong><em>tablero</em></span>
+          <span class="game-go">JUGAR</span>
+        </a>
+        <a class="game-card" data-game="space" href="/arcade/games/sokoban.html">
+          <span class="game-orb" aria-hidden="true">□</span>
+          <span class="game-meta"><strong>CAJAS</strong><em>empujar</em></span>
+          <span class="game-go">JUGAR</span>
+        </a>
+        <a class="game-card" data-game="fight" href="/arcade/games/matchThree.html">
+          <span class="game-orb" aria-hidden="true">◇</span>
+          <span class="game-meta"><strong>TRÍO</strong><em>gemas</em></span>
+          <span class="game-go">JUGAR</span>
+        </a>
+        <a class="game-card" data-game="jump" href="/arcade/games/moonLander.html">
+          <span class="game-orb" aria-hidden="true">△</span>
+          <span class="game-meta"><strong>LUNAR</strong><em>alunizar</em></span>
+          <span class="game-go">JUGAR</span>
+        </a>
+      </section>
+      <p class="vintage-credits"><a href="/vintage/credits/">créditos LittleJS Arcade</a></p>
+      <p class="foot">Gratis · Añade a inicio de pantalla</p>
+    </main>
+    <script type="module" src="/src/arcade.ts"></script>
+  </body>
+</html>

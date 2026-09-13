@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0B0C" />
+    <meta name="google" content="notranslate" />
+    <meta name="description" content="ALPHA-11 FIGHT — palitos" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ALPHA-11 FIGHT" />
+    <title>ALPHA-11 FIGHT</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="lab-body fight-body">
+    <div class="stage vin-stage fight-stage">
+      <header class="hud vin-hud">
+        <a class="hud-brand" href="/"><span>ALPHA-11 FIGHT</span></a>
+        <a class="vin-mini" href="/">HUB</a>
+      </header>
+      <div class="game-wrapper">
+        <div class="controls-panel hide-during-start" id="player1-controls">
+          <h3>J1</h3>
+          <ul class="controls-list">
+            <li>WASD mueve</li>
+            <li>Z golpe · X patada · C bola</li>
+          </ul>
+        </div>
+        <div id="game-container">
+          <h1 class="game-title hide-during-start">FIGHT</h1>
+          <div class="game-content">
+            <div class="overlay-backdrop" id="menu-backdrop"></div>
+            <div id="menu-overlay">
+              <div class="mode-buttons">
+                <button class="menu-button" id="singleplayer">Un jugador</button>
+                <button class="menu-button" id="multiplayer">Dos jugadores</button>
+              </div>
+              <div id="single-player-inputs" class="input-group">
+                <div class="input-label">Tu nombre</div>
+                <input type="text" id="player1-name-single" class="player-name-input" placeholder="J1" maxlength="12" />
+                <button class="menu-button" id="start-single">Empezar</button>
+                <button class="menu-button back-button" id="back-single">Atrás</button>
+              </div>
+              <div id="multiplayer-inputs" class="input-group">
+                <div class="input-label">Nombres</div>
+                <input type="text" id="player1-name-multi" class="player-name-input" placeholder="J1" maxlength="12" />
+                <input type="text" id="player2-name-multi" class="player-name-input" placeholder="J2" maxlength="12" />
+                <button class="menu-button" id="start-multi">Empezar</button>
+                <button class="menu-button back-button" id="back-multi">Atrás</button>
+              </div>
+            </div>
+            <div class="overlay-backdrop" id="pause-backdrop"></div>
+            <div id="pause-menu">
+              <h2 class="pause-title">Pausa</h2>
+              <button class="menu-button" id="resume">Seguir</button>
+              <button class="menu-button" id="exit">Menú</button>
+            </div>
+            <div class="overlay-backdrop" id="game-over-backdrop"></div>
+            <div id="game-over-menu" class="menu">
+              <h2 id="winner-message">J1 gana</h2>
+              <button id="play-again" class="menu-button">Otra</button>
+              <button id="exit-to-menu" class="menu-button">Menú</button>
+            </div>
+            <canvas id="gameCanvas"></canvas>
+            <div class="pause-instruction">Esc pausa</div>
+          </div>
+        </div>
+        <div class="controls-panel hide-during-start" id="player2-controls">
+          <h3>J2</h3>
+          <ul class="controls-list">
+            <li>Flechas mueve</li>
+            <li>, golpe · . patada · / bola</li>
+          </ul>
+        </div>
+      </div>
+      <div class="vin-pad fight-pad">
+        <button type="button" class="vin-key" data-fkey="KeyA">◀</button>
+        <button type="button" class="vin-key" data-fkey="KeyW">▲</button>
+        <button type="button" class="vin-key" data-fkey="KeyD">▶</button>
+        <button type="button" class="vin-key" data-fkey="KeyS">▼</button>
+        <button type="button" class="vin-key vin-key-acc" data-fkey="KeyZ">GOLPE</button>
+        <button type="button" class="vin-key vin-key-acc" data-fkey="KeyX">PATA</button>
+        <button type="button" class="vin-key vin-key-acc" data-fkey="KeyC">BOLA</button>
+      </div>
+    </div>
+    <script src="/vintage/fight/game.js"></script>
+    <script type="module" src="/src/fight.ts"></script>
+  </body>
+</html>
