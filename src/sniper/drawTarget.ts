@@ -7,7 +7,7 @@ export type RangeMark = {
   hex: string;
 };
 
-/** Range marks — silhouettes and plates, never LAB produce. */
+/** Range marks — plates and dummies on stands. Never LAB produce. */
 export const RANGE_MARKS: RangeMark[] = [
   { tier: 1, code: 'M1', color: 0x8b9bff, hex: '#8B9BFF' },
   { tier: 2, code: 'M2', color: 0x6ee7ff, hex: '#6EE7FF' },
@@ -44,9 +44,18 @@ function darken(color: number, t: number): number {
   return mix(color, 0x0b0b0c, t);
 }
 
+function stand(g: Phaser.GameObjects.Graphics, r: number): void {
+  g.fillStyle(0x2a2d38, 1);
+  g.fillRect(-r * 0.08, r * 0.42, r * 0.16, r * 0.72);
+  g.fillRect(-r * 0.38, r * 1.08, r * 0.76, r * 0.1);
+  g.fillStyle(0x171920, 1);
+  g.fillRect(-r * 0.42, r * 1.16, r * 0.84, r * 0.07);
+}
+
 function plate(g: Phaser.GameObjects.Graphics, r: number, c: number): void {
+  stand(g, r);
   g.fillStyle(0x0b0b0c, 0.3);
-  g.fillCircle(r * 0.06, r * 0.08, r);
+  g.fillCircle(r * 0.05, r * 0.06, r);
   g.fillStyle(0x2a2d38, 1);
   g.fillCircle(0, 0, r);
   g.fillStyle(c, 1);
@@ -62,6 +71,7 @@ function plate(g: Phaser.GameObjects.Graphics, r: number, c: number): void {
 }
 
 function diamondPlate(g: Phaser.GameObjects.Graphics, r: number, c: number): void {
+  stand(g, r);
   const pts = (s: number) => [
     { x: 0, y: -s },
     { x: s * 0.78, y: 0 },
@@ -81,40 +91,49 @@ function diamondPlate(g: Phaser.GameObjects.Graphics, r: number, c: number): voi
   fill(r * 0.58, 0xf4f1ea);
   fill(r * 0.28, darken(c, 0.15));
   g.fillStyle(0xe8ff47, 1);
-  g.fillCircle(0, 0, r * 0.08);
+  g.fillRect(-r * 0.08, -r * 0.08, r * 0.16, r * 0.16);
 }
 
+/** Humanoid dummy: square shoulders, neck, chest plate. Not an oval fruit. */
 function marksmanDummy(g: Phaser.GameObjects.Graphics, r: number, c: number): void {
   const ink = 0x171920;
+  stand(g, r);
   g.fillStyle(ink, 1);
-  g.fillEllipse(0, r * 0.08, r * 1.05, r * 1.55);
-  g.fillCircle(0, -r * 0.72, r * 0.42);
-  g.fillRoundedRect(-r * 0.92, -r * 0.18, r * 0.38, r * 0.95, r * 0.16);
-  g.fillRoundedRect(r * 0.54, -r * 0.18, r * 0.38, r * 0.95, r * 0.16);
+  g.fillRect(-r * 0.42, -r * 0.22, r * 0.84, r * 0.95);
+  g.fillRect(-r * 0.72, -r * 0.18, r * 0.3, r * 0.16);
+  g.fillRect(r * 0.42, -r * 0.18, r * 0.3, r * 0.16);
+  g.fillRect(-r * 0.12, -r * 0.42, r * 0.24, r * 0.22);
+  g.fillRect(-r * 0.22, -r * 0.78, r * 0.44, r * 0.4);
   g.fillStyle(c, 1);
-  g.fillEllipse(0, r * 0.02, r * 0.78, r * 1.12);
-  g.fillCircle(0, -r * 0.7, r * 0.3);
+  g.fillRect(-r * 0.34, -r * 0.14, r * 0.68, r * 0.78);
+  g.fillRect(-r * 0.18, -r * 0.72, r * 0.36, r * 0.3);
   g.fillStyle(0x2a2d38, 1);
-  g.fillRoundedRect(-r * 0.28, -r * 0.98, r * 0.56, r * 0.2, 3);
+  g.fillRect(-r * 0.2, -r * 0.8, r * 0.4, r * 0.1);
   g.fillStyle(0xe8ff47, 1);
-  g.fillCircle(0, -r * 0.12, r * 0.16);
+  g.fillCircle(0, 0.02 * r, r * 0.16);
   g.fillStyle(0x0b0b0c, 1);
-  g.fillCircle(0, -r * 0.12, r * 0.07);
-  g.fillStyle(0xffffff, 0.2);
-  g.fillEllipse(-r * 0.16, -r * 0.28, r * 0.28, r * 0.16);
+  g.fillCircle(0, 0.02 * r, r * 0.07);
+  g.fillStyle(0xffffff, 0.22);
+  g.fillRect(-r * 0.22, -r * 0.1, r * 0.2, r * 0.08);
 }
 
-function hoodedMark(g: Phaser.GameObjects.Graphics, r: number, c: number): void {
+/** Flat cardboard pop-up: head + shoulders cutout on a hinge. Not a hooded fruit. */
+function popUpSilhouette(g: Phaser.GameObjects.Graphics, r: number, c: number): void {
+  g.fillStyle(0x2a2d38, 1);
+  g.fillRect(-r * 0.07, r * 0.55, r * 0.14, r * 0.55);
+  g.fillRect(-r * 0.34, r * 1.05, r * 0.68, r * 0.1);
   g.fillStyle(0x12141a, 1);
-  g.fillEllipse(0, r * 0.12, r * 1.05, r * 1.5);
-  g.fillTriangle(-r * 0.55, -r * 0.55, r * 0.55, -r * 0.55, 0, -r * 1.28);
-  g.fillStyle(c, 0.92);
-  g.fillEllipse(0, r * 0.08, r * 0.72, r * 1.05);
+  g.fillRect(-r * 0.55, -r * 0.08, r * 1.1, r * 0.72);
+  g.fillRect(-r * 0.22, -r * 0.72, r * 0.44, r * 0.68);
+  g.fillStyle(c, 0.95);
+  g.fillRect(-r * 0.46, -r * 0.02, r * 0.92, r * 0.58);
+  g.fillRect(-r * 0.16, -r * 0.62, r * 0.32, r * 0.62);
   g.fillStyle(0x0b0b0c, 1);
-  g.fillEllipse(0, -r * 0.62, r * 0.38, r * 0.34);
-  g.fillStyle(0xe8ff47, 0.9);
-  g.fillRect(-r * 0.22, -r * 0.08, r * 0.44, r * 0.08);
-  g.fillCircle(0, r * 0.18, r * 0.12);
+  g.fillRect(-r * 0.1, -r * 0.52, r * 0.08, r * 0.08);
+  g.fillRect(0.02 * r, -r * 0.52, r * 0.08, r * 0.08);
+  g.fillStyle(0xe8ff47, 0.95);
+  g.fillRect(-r * 0.18, r * 0.12, r * 0.36, r * 0.08);
+  g.fillRect(-r * 0.08, r * 0.22, r * 0.16, r * 0.16);
 }
 
 export function drawRangeTarget(
@@ -132,7 +151,7 @@ export function drawRangeTarget(
   if (family === 0) plate(g, r, mark.color);
   else if (family === 1) diamondPlate(g, r, mark.color);
   else if (family === 2) marksmanDummy(g, r, mark.color);
-  else hoodedMark(g, r, mark.color);
+  else popUpSilhouette(g, r, mark.color);
   root.add([halo, g]);
   root.setDepth(10);
   return root;

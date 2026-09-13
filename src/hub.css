@@ -326,31 +326,43 @@ html.studio-ready {
   letter-spacing: -0.03em;
 }
 
-.studio .canon-row {
+.studio .cast-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
 }
 
-.studio .canon-dot {
-  width: 36px;
-  height: 36px;
-  font-size: 16px;
-  animation: orb-breathe 4.8s ease-in-out infinite;
+.studio .cast-chip {
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #0b0b0c;
 }
 
-.studio .canon-dot:nth-child(2) {
-  animation-delay: 0.4s;
+.studio .cast-chip--lab {
+  background: #7cffb2;
 }
-.studio .canon-dot:nth-child(3) {
-  animation-delay: 0.8s;
+.studio .cast-chip--jump {
+  background: #6ee7ff;
 }
-.studio .canon-dot:nth-child(4) {
-  animation-delay: 1.2s;
+.studio .cast-chip--shift {
+  background: #8b9bff;
 }
-.studio .canon-dot:nth-child(5) {
-  animation-delay: 1.6s;
+.studio .cast-chip--rush {
+  background: #ff9a3c;
+}
+.studio .cast-chip--kick {
+  background: #ff7a45;
+}
+.studio .cast-chip--sniper {
+  background: #e8ff47;
 }
 
 .hero-stage-note {
