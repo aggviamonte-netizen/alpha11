@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { creature } from './canon';
 import { el } from './dom';
 import { burstDots, floatLabel, screenWash } from './juice';
 import { sfxMerge, sfxOver, sfxSlide, sfxWin, unlockSfx } from './sfx';
+import { drawShiftPiece, shiftPiece } from './shiftPieces';
 import { loadShiftBest, resetShiftScore, saveShiftScore, shiftMergePoints } from './shiftScore';
-import { drawCreature, paintLabBackdrop } from './sprites';
+import { paintLabBackdrop } from './sprites';
 
 export const W = 390;
 export const H = 844;
@@ -173,7 +173,7 @@ export class ShiftScene extends Phaser.Scene {
     this.drawBoardGlow(0);
 
     this.add
-      .text(W / 2, ORIGIN_Y + BOARD + 38, 'Desliza · A1 → A11', {
+      .text(W / 2, ORIGIN_Y + BOARD + 38, 'Desliza · T1 → T11', {
         fontFamily: 'Outfit, ui-sans-serif, system-ui, sans-serif',
         fontSize: '13px',
         color: '#F4F1EA',
@@ -342,7 +342,7 @@ export class ShiftScene extends Phaser.Scene {
         ease: 'Cubic.easeOut',
         onComplete: () => {
           if (t.merged && !t.dead) {
-            burstDots(this, cellX(t.c), cellY(t.r), creature(t.tier).color, 8);
+            burstDots(this, cellX(t.c), cellY(t.r), shiftPiece(t.tier).color, 8);
             floatLabel(this, cellX(t.c), cellY(t.r) - 8, `+${shiftMergePoints(t.tier)}`, {
               size: '14px',
               lift: 28,
@@ -399,7 +399,7 @@ export class ShiftScene extends Phaser.Scene {
   }
 
   private makeSprite(tile: Tile, pop: boolean): void {
-    const spr = drawCreature(this, cellX(tile.c), cellY(tile.r), tile.tier, TILE_R);
+    const spr = drawShiftPiece(this, cellX(tile.c), cellY(tile.r), tile.tier, TILE_R);
     spr.setDepth(10);
     this.sprites.set(tile.id, spr);
     if (pop) {
@@ -443,7 +443,7 @@ export class ShiftScene extends Phaser.Scene {
     if (a11) burstDots(this, cellX(a11.c), cellY(a11.r), 0xf4f1ea, 12);
     screenWash(this, 0xe8ff47, 0.12, 320);
     sfxWin();
-    el('over-title').textContent = 'A11';
+    el('over-title').textContent = 'T11';
     el('over-score').textContent = `Puntos ${this.score} · Mejor ${this.best}`;
     const rec = document.getElementById('over-record');
     if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
@@ -478,14 +478,14 @@ export class ShiftScene extends Phaser.Scene {
     el('score').textContent = String(this.score);
     el('best').textContent = String(this.best);
     const top = this.tiles.reduce((m, t) => Math.max(m, t.dead ? 0 : t.tier), 0);
-    const c = creature(Math.max(1, top || 1));
+    const p = shiftPiece(Math.max(1, top || 1));
     const chip = document.getElementById('next-chip');
     if (chip) {
-      chip.style.background = c.hex;
-      chip.textContent = top ? c.emoji : '🟢';
-      chip.dataset.kind = top ? c.kind : 'circle';
+      chip.style.background = p.hex;
+      chip.textContent = top ? p.glyph : '●';
+      chip.dataset.kind = 'poly';
     }
     const code = document.getElementById('next-code');
-    if (code) code.textContent = top ? c.code : 'MAX';
+    if (code) code.textContent = top ? p.code : 'MAX';
   }
 }
