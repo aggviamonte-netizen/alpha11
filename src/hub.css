@@ -398,6 +398,14 @@ html.studio-ready {
   cursor: default;
 }
 
+.partner-slot--slim {
+  margin-top: 8px;
+}
+
+.partner-slot--banner {
+  min-height: 100px;
+}
+
 .partner-slot-meta {
   display: flex;
   justify-content: space-between;
@@ -455,10 +463,21 @@ html.studio-ready {
   max-width: 46ch;
 }
 
-.section-lead a {
+.section-lead a,
+.glass-card code,
+.section-lead code {
   color: var(--lime);
+}
+
+.section-lead a {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.glass-card code,
+.section-lead code {
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .lane {

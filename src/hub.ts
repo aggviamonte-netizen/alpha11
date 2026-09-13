@@ -1,8 +1,12 @@
 import { creature, CREATURES } from './game/canon';
 import { bootStudio } from './studio';
 
-// Inventory placeholders live in HTML: [data-ad-slot].
-// TODO(ads-backend): hydrate hub-native-1 / hub-native-2 without shipping ad scripts from this file.
+// Inventory placeholders live in HTML as [data-ad-slot] matching worker INVENTORY_SLOTS:
+//   hub_banner        — strip under the trust row (320x50 / 320x100)
+//   hub_native        — card after Vintage (320x180)
+//   interstitial_soft — in-game only; NOT rendered here
+// TODO(ads-backend): hydrate those nodes from GET /api/inventory.
+// Do not ship ads.js / AdSense / mediation from this file.
 
 bootStudio();
 

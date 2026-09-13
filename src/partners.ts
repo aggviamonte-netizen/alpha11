@@ -1,6 +1,6 @@
 import { bootStudio } from './studio';
 
-// TODO(ads-backend): [data-ad-slot="hub-native-preview"] stays inert. No ads.js here.
+// TODO(ads-backend): [data-ad-slot="hub_native"][data-ad-preview="true"] stays inert. No ads.js here.
 bootStudio();
 
 const MAIL = 'Aggviamonte@gmail.com';

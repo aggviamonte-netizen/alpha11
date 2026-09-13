@@ -82,15 +82,26 @@
       </section>
 
       <aside class="studio-wrap">
-        <!-- TODO(ads-backend): replace this inert native unit. Frontend must not load ads.js / AdSense. -->
-        <a class="partner-slot reveal" data-ad-slot="hub-native-1" data-ad-format="native" href="/partners/">
+        <!--
+          TODO(ads-backend): hydrate GET /api/inventory → hub_banner.
+          Slot id MUST stay hub_banner. Sizes 320x50 / 320x100. Planned, not live.
+          Frontend must not load ads.js / AdSense / any network tag.
+        -->
+        <a
+          class="partner-slot partner-slot--banner reveal"
+          data-ad-slot="hub_banner"
+          data-ad-format="banner"
+          data-ad-status="planned"
+          data-ad-sizes="320x50,320x100"
+          href="/partners/"
+        >
           <span class="partner-slot-meta">
             <span>Espacio partner</span>
-            <span>Hub · nativo · placeholder</span>
+            <span>hub_banner · 320×100 · placeholder</span>
           </span>
           <span class="partner-slot-copy">
-            <strong>Tu marca, en el mismo cristal que el arcade.</strong>
-            <em>No hay red de anuncios activa. Esto es el hueco que se vende — limpio, quieto, con nombre.</em>
+            <strong>Franja nativa del hub.</strong>
+            <em>No hay red activa. Esto es el hueco que se vende — limpio, quieto, con nombre.</em>
           </span>
           <span class="partner-slot-cta">Reservar</span>
         </a>
@@ -222,11 +233,22 @@
           <p class="vintage-credits"><a href="/vintage/credits/">créditos vintage</a></p>
         </div>
 
-        <!-- TODO(ads-backend): mid-arcade native. Keep placeholder until mediation exists. -->
-        <a class="partner-slot partner-slot--slim reveal" data-ad-slot="hub-native-2" data-ad-format="native" href="/partners/">
+        <!--
+          TODO(ads-backend): hydrate GET /api/inventory → hub_native.
+          Slot id MUST stay hub_native. Size 320x180. Among arcade tiles, not over a game.
+          Frontend must not load ads.js / AdSense / any network tag.
+        -->
+        <a
+          class="partner-slot partner-slot--slim reveal"
+          data-ad-slot="hub_native"
+          data-ad-format="native"
+          data-ad-status="planned"
+          data-ad-sizes="320x180"
+          href="/partners/"
+        >
           <span class="partner-slot-meta">
             <span>Espacio partner</span>
-            <span>Arcade · nativo · placeholder</span>
+            <span>hub_native · 320×180 · placeholder</span>
           </span>
           <span class="partner-slot-copy">
             <strong>Entre mesas, no encima del juego.</strong>
@@ -234,6 +256,10 @@
           </span>
           <span class="partner-slot-cta">Reservar</span>
         </a>
+        <!--
+          TODO(ads-backend): interstitial_soft (320x480 / 390x844) is in-game, between sessions.
+          Do not render it on the hub. Game pages are out of scope for this frontend pass.
+        -->
       </section>
 
       <section class="estudio studio-wrap" id="estudio">

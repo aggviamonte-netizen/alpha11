@@ -73,19 +73,30 @@
           <article class="glass-card reveal">
             <h3>Inventario después</h3>
             <p>
-              Piezas dentro de LAB, JUMP, SHIFT y RUSH: pausa y fin de partida. No hay AdSense ni
-              mediación enchufada. Si llegamos ahí, será con el mismo tono.
+              Piezas dentro de las mesas (pausa, fin de partida) — contrato
+              <code>interstitial_soft</code>. No hay AdSense ni mediación enchufada. Si llegamos
+              ahí, será con el mismo tono.
             </p>
           </article>
         </div>
       </section>
 
       <aside class="studio-wrap">
-        <!-- TODO(ads-backend): preview unit only. Do not serve live creatives from this page. -->
-        <div class="partner-slot partner-slot--static reveal" data-ad-slot="hub-native-preview" data-ad-format="native">
+        <!--
+          TODO(ads-backend): preview of hub_native only. data-ad-preview="true" means inert.
+          Do not serve live creatives or network tags from /partners.
+        -->
+        <div
+          class="partner-slot partner-slot--static reveal"
+          data-ad-slot="hub_native"
+          data-ad-format="native"
+          data-ad-status="planned"
+          data-ad-preview="true"
+          data-ad-sizes="320x180"
+        >
           <span class="partner-slot-meta">
             <span>Espacio partner</span>
-            <span>Ejemplo de unidad · no está a la venta en vivo</span>
+            <span>hub_native · ejemplo · no está a la venta en vivo</span>
           </span>
           <span class="partner-slot-copy">
             <strong>Así se sentiría una marca en el arcade.</strong>
