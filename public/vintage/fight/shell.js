@@ -36,10 +36,21 @@
     sendKey(key, type);
   }
 
+  function contentBox(el) {
+    const style = getComputedStyle(el);
+    const width =
+      el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const height =
+      el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    return { width, height };
+  }
+
   function fitCanvas() {
     if (!canvas || !play) return;
-    const availW = play.clientWidth;
-    const availH = play.clientHeight;
+    const stage = document.querySelector('.game-wrapper') || play;
+    const boxSize = contentBox(stage);
+    const availW = boxSize.width;
+    const availH = boxSize.height;
     if (availW < 2 || availH < 2) return;
 
     let width = availW;

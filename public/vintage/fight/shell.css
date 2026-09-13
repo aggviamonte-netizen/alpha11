@@ -113,8 +113,10 @@ body {
   min-height: 0;
   min-width: 0;
   display: grid;
-  place-items: center;
-  padding: 0 10px;
+  align-items: end;
+  justify-items: center;
+  padding: 0 8px 8px;
+  overflow: hidden;
   background:
     radial-gradient(80% 60% at 50% 0%, rgba(255, 139, 209, 0.08), transparent 56%),
     #0b0b0c;
@@ -126,7 +128,8 @@ body {
   max-width: 100%;
   max-height: 100%;
   display: grid;
-  place-items: center;
+  align-items: end;
+  justify-items: center;
 }
 
 #player1-controls,
@@ -250,9 +253,10 @@ body {
 .fight-pad {
   grid-area: pad;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.15fr 1fr;
+  align-items: end;
   gap: 10px;
-  padding: 10px 12px 8px;
+  padding: 4px 12px 8px;
 }
 
 .fight-cluster {
@@ -268,7 +272,22 @@ body {
 }
 
 .fight-cluster-act {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'punch kick'
+    'ball ball';
+}
+
+.fight-key[data-key='z'] {
+  grid-area: punch;
+}
+
+.fight-key[data-key='x'] {
+  grid-area: kick;
+}
+
+.fight-key[data-key='c'] {
+  grid-area: ball;
 }
 
 .fight-key {
@@ -336,6 +355,11 @@ body {
       'move play act';
   }
 
+  .fight-play,
+  .game-wrapper {
+    align-items: center;
+  }
+
   .fight-play {
     padding: 0 6px;
   }
@@ -355,6 +379,10 @@ body {
     align-self: end;
     padding: 0 8px 8px;
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'punch'
+      'kick'
+      'ball';
   }
 
   .fight-hint {
