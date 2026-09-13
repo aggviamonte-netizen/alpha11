@@ -20,21 +20,19 @@ function paintOrb(id: string, tier: number): void {
 }
 
 paintOrb('orb-lab', 3);
-paintOrb('orb-shift', 7);
-paintOrb('orb-kick', 8);
-paintOrb('orb-sniper', 6);
 
-const jump = document.getElementById('orb-jump');
-if (jump) {
-  jump.textContent = '';
-  jump.title = 'PULSO';
+function titleOrb(id: string, title: string): void {
+  const node = document.getElementById(id);
+  if (!node) return;
+  node.textContent = '';
+  node.title = title;
 }
 
-const rush = document.getElementById('orb-rush');
-if (rush) {
-  rush.textContent = '';
-  rush.title = 'BLOK';
-}
+titleOrb('orb-jump', 'PULSO');
+titleOrb('orb-shift', 'TESERAS');
+titleOrb('orb-rush', 'BLOK');
+titleOrb('orb-kick', 'KICK');
+titleOrb('orb-sniper', 'MIRA');
 
 // Parallel PRs paint extra orbs when they append cards:
 // paintOrb('orb-kick', …) / paintOrb('orb-sniper', …)

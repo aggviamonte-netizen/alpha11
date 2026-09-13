@@ -1,12 +1,9 @@
 import Phaser from 'phaser';
-import { creature } from '../game/canon';
 import { el } from '../game/dom';
 import { burstDots, pulseRing, screenWash, squashTo, UI_FONT } from '../game/juice';
 import { W } from '../game/layout';
 import { sfxOver, unlockSfx } from '../game/sfx';
-import { drawCreature } from '../game/sprites';
 import {
-  addKeeperGloves,
   drawAimArrow,
   drawLabBall,
   drawPowerMeter,
@@ -20,6 +17,7 @@ import {
   renderReticle,
   SPOT,
 } from './kickArt';
+import { drawKeeper, drawKicker, KICK_CHIP } from './drawKickCast';
 import { isNewKickRecord, loadKickBest, saveKickBest } from './kickScore';
 import { sfxGoal, sfxKick, sfxPost, sfxSave, sfxWhistle, sfxWide, unlockKickSfx } from './kickSfx';
 
@@ -131,11 +129,12 @@ export class KickScene extends Phaser.Scene {
     this.keeperShadow = this.add.ellipse(KEEPER_HOME.x, GOAL.lineY - 2, 42, 12, 0x000000, 0.3).setDepth(11);
     this.ballShadow = this.add.ellipse(SPOT.x, SPOT.y + 14, 22, 8, 0x000000, 0.26).setDepth(11);
 
-    this.keeper = drawCreature(this, KEEPER_HOME.x, KEEPER_HOME.y, 7, 32);
+    const keeperCast = drawKeeper(this, KEEPER_HOME.x, KEEPER_HOME.y);
+    this.keeper = keeperCast.root;
     this.keeper.setDepth(16);
-    this.gloves = addKeeperGloves(this, this.keeper);
+    this.gloves = keeperCast.gloves;
 
-    this.kicker = drawCreature(this, KICKER_POS.x, KICKER_POS.y, 5, 34);
+    this.kicker = drawKicker(this, KICKER_POS.x, KICKER_POS.y);
     this.kicker.setDepth(20);
 
     this.tellMark = this.add.graphics().setDepth(12);
@@ -628,13 +627,13 @@ export class KickScene extends Phaser.Scene {
   private syncHud(): void {
     el('score').textContent = String(this.score);
     el('best').textContent = String(this.best);
-    const c = creature(5);
     const chip = document.getElementById('next-chip');
     if (chip) {
-      chip.style.background = c.hex;
-      chip.textContent = c.emoji;
+      chip.style.background = KICK_CHIP.hex;
+      chip.textContent = '';
+      chip.classList.add('kick-chip');
     }
     const code = document.getElementById('next-code');
-    if (code) code.textContent = c.code;
+    if (code) code.textContent = KICK_CHIP.code;
   }
 }
