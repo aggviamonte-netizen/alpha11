@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0B0B0C" />
     <meta name="google" content="notranslate" />
-    <meta name="description" content="ALPHA-11 JUMP — runner" />
+    <meta name="description" content="ALPHA-11 JUMP — nave y disparo" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ALPHA-11 JUMP" />
@@ -36,7 +36,7 @@
         </div>
         <div class="hud-scores">
           <div>
-            <span class="lbl">DIST</span>
+            <span class="lbl">PTS</span>
             <b id="score">0</b>
           </div>
           <div class="hud-split"></div>
@@ -46,17 +46,20 @@
           </div>
         </div>
         <div class="hud-next">
-          <span class="lbl">PILOTO</span>
-          <div class="next-chip" id="next-chip"></div>
-          <span class="next-code" id="next-code">A5</span>
+          <span class="lbl">NAVE</span>
+          <div class="next-chip jump-chip" id="next-chip"></div>
+          <span class="next-code" id="next-code">PULSO</span>
         </div>
       </header>
       <div id="game"></div>
+      <p class="drop-hint" id="play-hint" hidden>ARRASTRA · DISPARO</p>
+      <button type="button" id="fire" class="fire-pad" hidden>DISPARO</button>
       <div class="overlay" id="overlay-start">
         <div class="panel start-panel">
           <p class="eyebrow">ALPHA-11</p>
           <h1>JUMP</h1>
-          <p class="toca">TOCA PARA SALTAR</p>
+          <p class="toca">ARRASTRA PARA VOLAR</p>
+          <p class="toca-sub">TOCA O DISPARO PARA DISPARAR</p>
         </div>
       </div>
       <div class="overlay" id="overlay-over" hidden>
