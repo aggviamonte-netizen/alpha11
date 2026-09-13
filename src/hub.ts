@@ -10,16 +10,15 @@ import { bootStudio } from './studio';
 
 bootStudio();
 
-function paintOrb(id: string, tier: number): void {
-  const node = document.getElementById(id);
+/** LAB is the only hub card that may wear the vegetable ladder. */
+function paintLabOrb(): void {
+  const node = document.getElementById('orb-lab');
   if (!node) return;
-  const c = creature(tier);
+  const c = creature(3);
   node.style.background = c.hex;
   node.textContent = c.emoji;
   node.title = `${c.code} ${c.name}`;
 }
-
-paintOrb('orb-lab', 3);
 
 function titleOrb(id: string, title: string): void {
   const node = document.getElementById(id);
@@ -28,15 +27,14 @@ function titleOrb(id: string, title: string): void {
   node.title = title;
 }
 
+paintLabOrb();
 titleOrb('orb-jump', 'PULSO');
 titleOrb('orb-shift', 'TESERAS');
 titleOrb('orb-rush', 'BLOK');
 titleOrb('orb-kick', 'KICK');
 titleOrb('orb-sniper', 'MIRA');
 
-// Parallel PRs paint extra orbs when they append cards:
-// paintOrb('orb-kick', …) / paintOrb('orb-sniper', …)
-
+// Featured veggies stay on the LAB-only hero strip — not a studio-wide parade.
 const row = document.getElementById('canon-row');
 if (row) {
   const featured = CREATURES.filter((c) => [1, 3, 5, 7, 11].includes(c.tier));
@@ -45,7 +43,7 @@ if (row) {
     dot.className = 'canon-dot';
     dot.style.background = c.hex;
     dot.textContent = c.emoji;
-    dot.title = `${c.code} ${c.name}`;
+    dot.title = `LAB ${c.code} ${c.name}`;
     row.appendChild(dot);
   }
 }
