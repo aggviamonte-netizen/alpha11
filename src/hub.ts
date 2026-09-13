@@ -20,10 +20,15 @@ function paintOrb(id: string, tier: number): void {
 }
 
 paintOrb('orb-lab', 3);
-paintOrb('orb-jump', 5);
 paintOrb('orb-shift', 7);
 paintOrb('orb-kick', 8);
 paintOrb('orb-sniper', 6);
+
+const jump = document.getElementById('orb-jump');
+if (jump) {
+  jump.textContent = '';
+  jump.title = 'PULSO';
+}
 
 const rush = document.getElementById('orb-rush');
 if (rush) {

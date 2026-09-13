@@ -1,62 +1,93 @@
 import Phaser from 'phaser';
-import { creature, radiusPx } from './canon';
 import { el } from './dom';
-import { burstDots, pulseRing, screenWash, squashTo } from './juice';
+import { drawAsteroid, drawBolt, drawPulseCraft, drawSentry, poseCraft, type CraftRig } from './drawCraft';
+import { burstDots, floatLabel, pulseRing, screenWash, squashTo } from './juice';
 import { loadJumpBest, saveJumpBest } from './jumpScore';
-import { sfxGate, sfxJump, sfxLand, sfxOver, unlockSfx } from './sfx';
-import { drawCreature, paintLabBackdrop } from './sprites';
+import { sfxHit, sfxKill, sfxLand, sfxOver, sfxShot, unlockSfx } from './sfx';
 
 export const W = 390;
 export const H = 844;
 
-const PX = 96;
-const GRAVITY = 1280;
-const FLAP = -390;
-const MAX_FALL = 620;
-const RAIL = 40;
-const PIPE_W = 68;
-const INTERVAL = 268;
-const HIT = 0.66;
+const PAD = 28;
+const TOP = 86;
+const BOT = 78;
+const HIT = 9;
+const FIRE_MS = 108;
+const GRACE = 1100;
 
 type Phase = 'start' | 'play' | 'over';
+type FoeKind = 'rock' | 'big' | 'drone' | 'elite';
 
-type Gate = {
+type Foe = {
+  kind: FoeKind;
   x: number;
-  gapY: number;
-  gap: number;
-  scored: boolean;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  hp: number;
+  spin: number;
+  shotAt: number;
   root: Phaser.GameObjects.Container;
 };
 
-type Mote = { g: Phaser.GameObjects.Arc; vx: number };
+type Bolt = {
+  x: number;
+  y: number;
+  vy: number;
+  enemy: boolean;
+  root: Phaser.GameObjects.Container;
+};
+
+type Star = { g: Phaser.GameObjects.Arc; vy: number };
 
 let skipStart = false;
 
-function circleRect(cx: number, cy: number, r: number, x: number, y: number, w: number, h: number): boolean {
-  const nx = Phaser.Math.Clamp(cx, x, x + w);
-  const ny = Phaser.Math.Clamp(cy, y, y + h);
-  const dx = cx - nx;
-  const dy = cy - ny;
-  return dx * dx + dy * dy < r * r;
+function circleHit(ax: number, ay: number, ar: number, bx: number, by: number, br: number): boolean {
+  const dx = ax - bx;
+  const dy = ay - by;
+  const rr = ar + br;
+  return dx * dx + dy * dy < rr * rr;
+}
+
+function foeStats(kind: FoeKind): { r: number; hp: number; pts: number } {
+  if (kind === 'rock') return { r: 13, hp: 1, pts: 8 };
+  if (kind === 'big') return { r: 21, hp: 2, pts: 16 };
+  if (kind === 'drone') return { r: 14, hp: 2, pts: 18 };
+  return { r: 16, hp: 3, pts: 32 };
 }
 
 export class JumpScene extends Phaser.Scene {
   private phase: Phase = 'start';
   private score = 0;
+  private dist = 0;
+  private kills = 0;
+  private bonus = 0;
   private best = 0;
-  private py = H * 0.46;
-  private vy = 0;
+  private combo = 0;
+  private comboUntil = 0;
+  private px = W * 0.5;
+  private py = H * 0.74;
+  private vx = 0;
+  private aimX = W * 0.5;
+  private aimY = H * 0.74;
+  private moveId = -1;
+  private tapX = 0;
+  private tapY = 0;
+  private holdingFire = false;
+  private lastShot = 0;
+  private graceUntil = 0;
   private traveled = 0;
-  private player!: Phaser.GameObjects.Container;
-  private glow!: Phaser.GameObjects.Arc;
-  private shadow!: Phaser.GameObjects.Ellipse;
-  private gates: Gate[] = [];
-  private motes: Mote[] = [];
-  private racks: Array<{ x: number }> = [];
+  private spawnT = 0;
   private pulse = 0;
   private lastTrail = 0;
   private frozenUntil = 0;
-  private flapping = false;
+  private keys = { l: false, r: false, u: false, d: false };
+  private rig!: CraftRig;
+  private foes: Foe[] = [];
+  private bolts: Bolt[] = [];
+  private stars: Star[] = [];
+  private motes: Star[] = [];
 
   constructor() {
     super('jump');
@@ -65,29 +96,37 @@ export class JumpScene extends Phaser.Scene {
   create(): void {
     this.phase = 'start';
     this.score = 0;
+    this.dist = 0;
+    this.kills = 0;
+    this.bonus = 0;
     this.best = loadJumpBest();
-    this.py = H * 0.46;
-    this.vy = 0;
+    this.combo = 0;
+    this.comboUntil = 0;
+    this.px = W * 0.5;
+    this.py = H * 0.74;
+    this.vx = 0;
+    this.aimX = this.px;
+    this.aimY = this.py;
+    this.moveId = -1;
+    this.holdingFire = false;
+    this.lastShot = 0;
+    this.graceUntil = 0;
     this.traveled = 0;
-    this.gates = [];
-    this.motes = [];
-    this.racks = [];
+    this.spawnT = -1.15;
     this.pulse = 0;
     this.lastTrail = 0;
     this.frozenUntil = 0;
-    this.flapping = false;
+    this.keys = { l: false, r: false, u: false, d: false };
+    this.foes = [];
+    this.bolts = [];
+    this.stars = [];
+    this.motes = [];
 
+    this.input.addPointer(2);
     this.paintWorld();
-    this.shadow = this.add.ellipse(PX, this.py + radiusPx(5) * 0.86, 28, 10, 0x000000, 0.22).setDepth(18);
-    this.player = drawCreature(this, PX, this.py, 5);
-    this.player.setDepth(20);
-    this.glow = this.add.circle(PX, this.py, radiusPx(5) * 1.5, creature(5).color, 0.18);
-    this.glow.setDepth(19);
-
-    this.input.on('pointerdown', () => {
-      unlockSfx();
-      if (this.phase === 'play') this.flap();
-    });
+    this.rig = drawPulseCraft(this, this.px, this.py);
+    this.bindInput();
+    this.bindFirePad();
 
     el('overlay-over').hidden = true;
     el('retry').onclick = () => {
@@ -96,6 +135,7 @@ export class JumpScene extends Phaser.Scene {
     };
 
     this.syncHud();
+    this.setFirePad(false);
     if (skipStart) {
       skipStart = false;
       this.beginPlay();
@@ -111,56 +151,32 @@ export class JumpScene extends Phaser.Scene {
     this.tickDecor(s);
 
     if (this.phase !== 'play') {
-      const y = this.py + Math.sin(this.pulse * 2.4) * 5;
-      this.player.setPosition(PX, y);
-      this.glow.setPosition(PX, y);
-      this.glow.setAlpha(0.16 + Math.sin(this.pulse * 3) * 0.05);
-      this.shadow.setPosition(PX, y + radiusPx(5) * 0.86);
+      const y = this.py + Math.sin(this.pulse * 2.3) * 5;
+      this.rig.root.setPosition(this.px, y);
+      poseCraft(this.rig, Math.sin(this.pulse * 1.4) * 40, this.pulse, false);
       return;
     }
 
     if (this.time.now < this.frozenUntil) {
-      this.player.setPosition(PX, this.py);
-      this.glow.setPosition(PX, this.py);
-      this.shadow.setPosition(PX, this.py + radiusPx(5) * 0.86);
+      this.rig.root.setPosition(this.px, this.py);
       return;
     }
 
-    this.vy = Math.min(this.vy + GRAVITY * s, MAX_FALL);
-    this.py += this.vy * s;
-    this.player.setPosition(PX, this.py);
-    this.player.setRotation(Phaser.Math.Clamp(this.vy / 980, -0.5, 0.72));
-    if (!this.flapping) {
-      const t = Phaser.Math.Clamp(this.vy / MAX_FALL, -0.75, 1);
-      this.player.setScale(1 - t * 0.1, 1 + t * 0.13);
-    }
-    this.glow.setPosition(PX, this.py);
-    this.glow.setAlpha(0.18 + Math.max(0, -this.vy) / 1800);
-    this.shadow.setPosition(PX, this.py + radiusPx(5) * 0.86);
-    this.shadow.setAlpha(0.12 + Math.max(0, this.vy) / 2800);
-
-    const speed = this.scrollSpeed();
-    this.traveled += speed * s;
-    const next = Math.floor(this.traveled / 16);
-    if (next !== this.score) {
-      this.score = next;
-      this.syncHud();
-    }
-
-    for (const gate of this.gates) {
-      gate.x -= speed * s;
-      gate.root.setX(gate.x);
-      if (!gate.scored && gate.x + PIPE_W / 2 < PX) {
-        gate.scored = true;
-        pulseRing(this, PX + 8, this.py, 0xe8ff47, 8, 1.8);
-        sfxGate();
-      }
-    }
-
-    this.recycleGates();
+    this.steer(s);
+    if (this.holdingFire) this.tryFire();
+    this.tickBolts(s);
+    this.tickFoes(s);
+    this.spawnWave(s);
     this.spawnTrail();
+    this.hitTest();
 
-    if (this.hitWorld()) this.gameOver();
+    this.traveled += this.scrollSpeed() * s;
+    const nextDist = Math.floor(this.traveled / 16);
+    if (nextDist !== this.dist) {
+      this.dist = nextDist;
+      this.refreshScore();
+    }
+    if (this.time.now > this.comboUntil) this.combo = 0;
   }
 
   private beginPlay(): void {
@@ -170,229 +186,393 @@ export class JumpScene extends Phaser.Scene {
     el('overlay-start').onclick = null;
     this.phase = 'play';
     this.score = 0;
+    this.dist = 0;
+    this.kills = 0;
+    this.bonus = 0;
     this.traveled = 0;
+    this.graceUntil = this.time.now + GRACE;
     this.syncHud();
-    this.flap();
+    this.setFirePad(true);
+    this.showHint();
+    this.time.delayedCall(380, () => {
+      if (this.phase === 'play' && this.foes.length === 0) {
+        this.spawnFoe('rock', W * 0.5, -30);
+      }
+    });
   }
 
-  private flap(): void {
-    if (this.phase !== 'play') return;
-    this.vy = FLAP;
-    sfxJump();
-    this.flapping = true;
-    this.tweens.killTweensOf(this.player);
-    this.player.setScale(1.18, 0.7);
-    this.tweens.add({
-      targets: this.player,
-      scaleX: 0.86,
-      scaleY: 1.2,
-      duration: 70,
-      onComplete: () => {
-        this.tweens.add({
-          targets: this.player,
-          scaleX: 1,
-          scaleY: 1,
-          duration: 130,
-          ease: 'Sine.out',
-          onComplete: () => {
-            this.flapping = false;
-          },
-        });
-      },
+  private bindInput(): void {
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      unlockSfx();
+      if (this.phase !== 'play') return;
+      this.moveId = p.id;
+      this.tapX = p.x;
+      this.tapY = p.y;
+      this.aimX = p.x;
+      this.aimY = p.y;
     });
-    burstDots(this, PX, this.py + 10, creature(5).color, 7);
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (this.phase !== 'play' || p.id !== this.moveId) return;
+      this.aimX = p.x;
+      this.aimY = p.y;
+    });
+    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (this.phase !== 'play' || p.id !== this.moveId) return;
+      const dx = p.x - this.tapX;
+      const dy = p.y - this.tapY;
+      if (dx * dx + dy * dy < 16 * 16) this.tryFire();
+      this.moveId = -1;
+    });
+
+    const kb = this.input.keyboard;
+    if (!kb) return;
+    const hold = (code: string, on: boolean): void => {
+      if (code === 'ArrowLeft' || code === 'KeyA') this.keys.l = on;
+      if (code === 'ArrowRight' || code === 'KeyD') this.keys.r = on;
+      if (code === 'ArrowUp' || code === 'KeyW') this.keys.u = on;
+      if (code === 'ArrowDown' || code === 'KeyS') this.keys.d = on;
+    };
+    kb.on('keydown', (e: KeyboardEvent) => {
+      hold(e.code, true);
+      if (e.code === 'Space' || e.code === 'KeyZ') {
+        e.preventDefault();
+        this.holdingFire = true;
+        this.tryFire();
+      }
+    });
+    kb.on('keyup', (e: KeyboardEvent) => {
+      hold(e.code, false);
+      if (e.code === 'Space' || e.code === 'KeyZ') this.holdingFire = false;
+    });
+  }
+
+  private bindFirePad(): void {
+    const fire = el('fire');
+    fire.onpointerdown = (e: PointerEvent) => {
+      e.preventDefault();
+      fire.setPointerCapture(e.pointerId);
+      unlockSfx();
+      this.holdingFire = true;
+      this.tryFire();
+    };
+    fire.onpointerup = () => {
+      this.holdingFire = false;
+    };
+    fire.onpointercancel = () => {
+      this.holdingFire = false;
+    };
+  }
+
+  private setFirePad(on: boolean): void {
+    el('fire').hidden = !on;
+  }
+
+  private steer(s: number): void {
+    const kb = 210;
+    if (this.keys.l) this.aimX -= kb * s;
+    if (this.keys.r) this.aimX += kb * s;
+    if (this.keys.u) this.aimY -= kb * s;
+    if (this.keys.d) this.aimY += kb * s;
+
+    this.aimX = Phaser.Math.Clamp(this.aimX, PAD, W - PAD);
+    this.aimY = Phaser.Math.Clamp(this.aimY, TOP, H - BOT);
+
+    const prevX = this.px;
+    this.px += (this.aimX - this.px) * Math.min(1, 14 * s);
+    this.py += (this.aimY - this.py) * Math.min(1, 14 * s);
+    this.vx = (this.px - prevX) / Math.max(s, 0.001);
+    this.rig.root.setPosition(this.px, this.py);
+    poseCraft(this.rig, this.vx, this.pulse, true);
+  }
+
+  private tryFire(): void {
+    if (this.phase !== 'play') return;
+    if (this.time.now - this.lastShot < FIRE_MS) return;
+    this.lastShot = this.time.now;
+    this.spawnBolt(this.px - 9, this.py - 22, -560, false);
+    this.spawnBolt(this.px, this.py - 28, -600, false);
+    this.spawnBolt(this.px + 9, this.py - 22, -560, false);
+    sfxShot();
+    squashTo(this, this.rig.root, 0.86, 1.16, 90);
+    pulseRing(this, this.px, this.py - 20, 0xe8ff47, 5, 1.5);
+    this.hideHint();
+  }
+
+  private spawnBolt(x: number, y: number, vy: number, enemy: boolean): void {
+    const root = drawBolt(this, enemy).setDepth(enemy ? 16 : 21);
+    root.setPosition(x, y);
+    this.bolts.push({ x, y, vy, enemy, root });
+  }
+
+  private tickBolts(s: number): void {
+    this.bolts = this.bolts.filter((b) => {
+      b.y += b.vy * s;
+      b.root.setPosition(b.x, b.y);
+      if (b.y < -24 || b.y > H + 24) {
+        b.root.destroy(true);
+        return false;
+      }
+      return true;
+    });
   }
 
   private scrollSpeed(): number {
-    return 148 + Math.min(130, this.score * 2.1);
+    return 104 + Math.min(128, this.dist * 1.25);
   }
 
-  private gapSize(): number {
-    return 236 - Math.min(70, this.score * 1.15);
-  }
-
-  private paintWorld(): void {
-    paintLabBackdrop(this);
-    const wash = this.add.graphics().setDepth(0);
-    wash.fillStyle(0x141822, 0.82);
-    wash.fillRect(0, 0, W, H);
-    wash.fillStyle(0x6ee7ff, 0.08);
-    wash.fillEllipse(W * 0.22, 150, 240, 110);
-    wash.fillStyle(0xff8bd1, 0.07);
-    wash.fillEllipse(W * 0.78, 680, 260, 120);
-
-    const grid = this.add.graphics().setDepth(1);
-    grid.lineStyle(1, 0xf4f1ea, 0.08);
-    for (let x = 0; x <= W; x += 28) grid.lineBetween(x, 0, x, H);
-    for (let y = 0; y <= H; y += 28) grid.lineBetween(0, y, W, y);
-
-    const colors = [0x8b9bff, 0x6ee7ff, 0xff8bd1, 0xe8ff47];
-    for (let i = 0; i < 7; i++) {
-      const x = 22 + i * 56;
-      const h = 96 + (i % 3) * 54;
-      const y = i % 2 === 0 ? 92 + h / 2 : H - 92 - h / 2;
-      const rack = this.add.rectangle(x, y, 20, h, 0x151820, 0.92).setDepth(2);
-      rack.setStrokeStyle(1, colors[i % colors.length], 0.32);
-      this.racks.push(rack);
-      const flask = this.add.circle(x, y, 6, colors[i % colors.length], 0.4).setDepth(2);
-      this.racks.push(flask);
+  private spawnWave(s: number): void {
+    this.spawnT += s;
+    const gap = Math.max(0.58, 1.42 - this.dist * 0.006);
+    if (this.spawnT < gap) return;
+    this.spawnT = 0;
+    const roll = Math.random();
+    const mid = this.dist > 28;
+    const late = this.dist > 80;
+    if (!mid) {
+      const lane = Phaser.Math.Between(0, 2);
+      const x = lane === 0 ? W * 0.5 : lane === 1 ? W * 0.34 : W * 0.66;
+      this.spawnFoe('rock', x, -28);
+      return;
     }
-
-    for (let i = 0; i < 12; i++) {
-      const mote = this.add.circle(
-        Math.random() * W,
-        Math.random() * H,
-        1.3 + Math.random() * 1.8,
-        i % 2 === 0 ? 0xe8ff47 : 0x6ee7ff,
-        0.2 + Math.random() * 0.28,
-      );
-      mote.setDepth(3);
-      this.motes.push({ g: mote, vx: 16 + Math.random() * 32 });
-    }
-
-    const rails = this.add.graphics().setDepth(8);
-    rails.fillStyle(0x1a202a, 1);
-    rails.fillRect(0, 0, W, RAIL);
-    rails.fillRect(0, H - RAIL, W, RAIL);
-    rails.fillStyle(0xffffff, 0.1);
-    rails.fillRect(0, RAIL - 10, W, 6);
-    rails.fillStyle(0xf4f1ea, 0.28);
-    rails.fillRect(0, RAIL - 4, W, 4);
-    rails.fillRect(0, H - RAIL, W, 4);
-    rails.lineStyle(2, 0xe8ff47, 0.75);
-    for (let x = 0; x < W; x += 12) {
-      rails.lineBetween(x, RAIL - 2, Math.min(x + 7, W), RAIL - 2);
-      rails.lineBetween(x, H - RAIL + 2, Math.min(x + 7, W), H - RAIL + 2);
-    }
-
-    for (let i = 0; i < 4; i++) this.spawnGate(W + 90 + i * INTERVAL);
-  }
-
-  private spawnGate(x: number): void {
-    const gap = this.gapSize();
-    const minY = RAIL + 18 + gap / 2;
-    const maxY = H - RAIL - 18 - gap / 2;
-    const gapY = Phaser.Math.Between(Math.ceil(minY), Math.floor(maxY));
-    const topH = gapY - gap / 2;
-    const botY = gapY + gap / 2;
-    const botH = H - botY;
-    const root = this.add.container(x, 0).setDepth(12);
-    root.add(this.drawColumn(0, topH / 2, PIPE_W, topH, 'bottom'));
-    root.add(this.drawColumn(0, botY + botH / 2, PIPE_W, botH, 'top'));
-    this.gates.push({ x, gapY, gap, scored: false, root });
-  }
-
-  private drawColumn(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    lip: 'top' | 'bottom',
-  ): Phaser.GameObjects.Container {
-    const col = this.add.container(x, y);
-    const g = this.add.graphics();
-    g.fillStyle(0x1c2430, 0.98);
-    g.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
-    g.fillStyle(0x6ee7ff, 0.12);
-    g.fillRoundedRect(-w / 2 + 5, -h / 2 + 6, w * 0.34, Math.max(12, h - 12), 5);
-    g.fillStyle(0xffffff, 0.06);
-    g.fillRoundedRect(w / 2 - 14, -h / 2 + 8, 8, Math.max(10, h - 16), 4);
-    g.lineStyle(2, 0xf4f1ea, 0.5);
-    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
-
-    const step = 32;
-    const n = Math.max(1, Math.floor(h / step));
-    const vial = [0x7cffb2, 0x8b9bff, 0xff8bd1, 0xe8ff47, 0x6ee7ff];
-    for (let i = 0; i < n; i++) {
-      const vy = -h / 2 + 18 + i * step;
-      if (vy > h / 2 - 18) continue;
-      g.fillStyle(vial[i % vial.length], 0.42);
-      g.fillRoundedRect(-12, vy - 11, 24, 22, 8);
-      g.lineStyle(1, 0xf4f1ea, 0.38);
-      g.strokeRoundedRect(-12, vy - 11, 24, 22, 8);
-      g.fillStyle(0xffffff, 0.18);
-      g.fillCircle(-5, vy - 4, 3);
-    }
-
-    const lipY = lip === 'bottom' ? h / 2 - 6 : -h / 2 + 6;
-    g.fillStyle(0xe8ff47, 0.22);
-    g.fillRoundedRect(-w / 2 - 10, lipY - 12, w + 20, 24, 10);
-    g.fillStyle(0xe8ff47, 0.96);
-    g.fillRoundedRect(-w / 2 - 4, lipY - 5, w + 8, 10, 4);
-    col.add(g);
-    return col;
-  }
-
-  private recycleGates(): void {
-    this.gates = this.gates.filter((gate) => {
-      if (gate.x > -PIPE_W - 20) return true;
-      gate.root.destroy(true);
-      return false;
-    });
-    let farthest = this.gates.reduce((m, g) => Math.max(m, g.x), PX);
-    while (this.gates.length < 4) {
-      farthest += INTERVAL;
-      this.spawnGate(farthest);
+    if (roll < 0.4) {
+      this.spawnFoe(Math.random() < 0.22 ? 'big' : 'rock', Phaser.Math.Between(PAD + 10, W - PAD - 10), -28);
+    } else if (roll < 0.7) {
+      this.spawnFoe('drone', Phaser.Math.Between(52, W - 52), -30);
+    } else if (roll < 0.86) {
+      this.spawnFoe('rock', 64, -26);
+      this.spawnFoe('rock', W - 64, -64);
+    } else if (late && roll < 0.95) {
+      this.spawnFoe('elite', W * 0.5, -36);
+    } else {
+      this.spawnFoe('rock', Phaser.Math.Between(48, W - 48), -24);
+      if (late) this.spawnFoe('drone', Phaser.Math.Between(60, W - 60), -70);
     }
   }
 
-  private spawnTrail(): void {
-    if (this.time.now - this.lastTrail < 52) return;
-    this.lastTrail = this.time.now;
-    const dot = this.add.circle(PX - 12, this.py + 4, 3.4, creature(5).color, 0.32).setDepth(18);
-    this.tweens.add({
-      targets: dot,
-      x: PX - 50,
-      alpha: 0,
-      scale: 0.15,
-      duration: 260,
-      onComplete: () => dot.destroy(),
+  private spawnFoe(kind: FoeKind, x: number, y: number): void {
+    const { r, hp } = foeStats(kind);
+    const root =
+      kind === 'drone' || kind === 'elite' ? drawSentry(this, kind === 'elite') : drawAsteroid(this, kind === 'big' ? 2 : 0);
+    root.setDepth(14);
+    root.setPosition(x, y);
+    const speed = this.scrollSpeed();
+    const vy = kind === 'drone' || kind === 'elite' ? speed * 0.36 : speed * 0.52;
+    const vx = kind === 'drone' || kind === 'elite' ? Phaser.Math.FloatBetween(-36, 36) : Phaser.Math.FloatBetween(-18, 18);
+    this.foes.push({
+      kind,
+      x,
+      y,
+      vx,
+      vy,
+      r,
+      hp,
+      spin: Phaser.Math.FloatBetween(-1.6, 1.6),
+      shotAt: this.time.now + Phaser.Math.Between(420, 1100),
+      root,
     });
   }
 
-  private tickDecor(s: number): void {
-    const drift = (this.phase === 'play' && this.time.now >= this.frozenUntil ? this.scrollSpeed() : 36) * s;
-    for (const rack of this.racks) {
-      rack.x -= drift * 0.28;
-      if (rack.x < -20) rack.x = W + 20;
+  private tickFoes(s: number): void {
+    this.foes = this.foes.filter((f) => {
+      if (f.kind === 'drone' || f.kind === 'elite') {
+        f.vx += Math.sin(this.pulse * 3.2 + f.x * 0.02) * 28 * s;
+        f.vx = Phaser.Math.Clamp(f.vx, -80, 80);
+      }
+      f.x += f.vx * s;
+      f.y += f.vy * s;
+      if (f.x < PAD) {
+        f.x = PAD;
+        f.vx *= -1;
+      }
+      if (f.x > W - PAD) {
+        f.x = W - PAD;
+        f.vx *= -1;
+      }
+      f.root.setPosition(f.x, f.y);
+      if (f.kind === 'rock' || f.kind === 'big') f.root.setRotation(f.root.rotation + f.spin * s);
+      if ((f.kind === 'drone' || f.kind === 'elite') && this.time.now >= f.shotAt && f.y > 40 && f.y < H * 0.7) {
+        f.shotAt = this.time.now + (f.kind === 'elite' ? 720 : 1280);
+        this.spawnBolt(f.x, f.y + 14, 260, true);
+      }
+      if (f.y > H + 40) {
+        f.root.destroy(true);
+        return false;
+      }
+      return true;
+    });
+  }
+
+  private hitTest(): void {
+    this.bolts = this.bolts.filter((b) => {
+      if (b.enemy) return true;
+      for (const f of this.foes) {
+        if (circleHit(b.x, b.y, 8, f.x, f.y, f.r + 3)) {
+          b.root.destroy(true);
+          this.hurtFoe(f);
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (this.time.now < this.graceUntil) return;
+    for (const b of this.bolts) {
+      if (b.enemy && circleHit(this.px, this.py, HIT, b.x, b.y, 5)) {
+        this.gameOver();
+        return;
+      }
     }
-    for (const mote of this.motes) {
-      mote.g.x -= mote.vx * s * (this.phase === 'play' ? 1.4 : 0.4);
-      mote.g.y += Math.sin((mote.g.x + this.pulse * 40) * 0.04) * 0.25;
-      if (mote.g.x < -8) {
-        mote.g.x = W + 8;
-        mote.g.y = Math.random() * H;
+    for (const f of this.foes) {
+      if (circleHit(this.px, this.py, HIT, f.x, f.y, f.r * 0.72)) {
+        this.gameOver();
+        return;
       }
     }
   }
 
-  private hitWorld(): boolean {
-    const r = radiusPx(5) * HIT;
-    if (this.py - r <= RAIL || this.py + r >= H - RAIL) return true;
-    for (const gate of this.gates) {
-      const topH = gate.gapY - gate.gap / 2;
-      const botY = gate.gapY + gate.gap / 2;
-      if (circleRect(PX, this.py, r, gate.x - PIPE_W / 2, 0, PIPE_W, topH)) return true;
-      if (circleRect(PX, this.py, r, gate.x - PIPE_W / 2, botY, PIPE_W, H - botY)) return true;
+  private hurtFoe(f: Foe): void {
+    f.hp -= 1;
+    sfxHit();
+    f.root.setAlpha(0.45);
+    this.tweens.add({ targets: f.root, alpha: 1, duration: 70 });
+    burstDots(this, f.x, f.y, 0xe8ff47, 5);
+    if (f.hp > 0) return;
+    this.foes = this.foes.filter((x) => x !== f);
+    f.root.destroy(true);
+    this.kills += 1;
+    this.combo = this.time.now < this.comboUntil ? this.combo + 1 : 1;
+    this.comboUntil = this.time.now + 900;
+    const pts = foeStats(f.kind).pts + Math.min(12, (this.combo - 1) * 3);
+    this.bonus += pts;
+    floatLabel(this, f.x, f.y, this.combo > 1 ? `+${pts} x${this.combo}` : `+${pts}`);
+    pulseRing(this, f.x, f.y, f.kind === 'elite' ? 0xff8bd1 : 0x6ee7ff, 8, 2);
+    sfxKill();
+    this.refreshScore();
+  }
+
+  private refreshScore(): void {
+    this.score = this.dist + this.bonus;
+    this.syncHud();
+  }
+
+  private paintWorld(): void {
+    const sky = this.add.graphics().setDepth(0);
+    sky.fillStyle(0x08090f, 1);
+    sky.fillRect(0, 0, W, H);
+    sky.fillStyle(0x141822, 1);
+    sky.fillEllipse(W * 0.2, 160, 260, 180);
+    sky.fillStyle(0x7b4dff, 0.16);
+    sky.fillEllipse(80, 210, 220, 110);
+    sky.fillStyle(0xff8bd1, 0.12);
+    sky.fillEllipse(W - 40, 620, 240, 140);
+    sky.fillStyle(0x6ee7ff, 0.1);
+    sky.fillEllipse(W * 0.55, 420, 200, 90);
+    sky.fillStyle(0xe8ff47, 0.08);
+    sky.fillCircle(48, 92, 70);
+
+    const grid = this.add.graphics().setDepth(1);
+    grid.lineStyle(1, 0xf4f1ea, 0.05);
+    for (let x = 0; x <= W; x += 32) grid.lineBetween(x, 0, x, H);
+    for (let y = 0; y <= H; y += 32) grid.lineBetween(0, y, W, y);
+
+    for (let i = 0; i < 42; i++) {
+      const star = this.add.circle(
+        Math.random() * W,
+        Math.random() * H,
+        i % 7 === 0 ? 1.7 : 1.05,
+        i % 5 === 0 ? 0x6ee7ff : 0xf4f1ea,
+        0.18 + Math.random() * 0.45,
+      );
+      star.setDepth(2);
+      this.stars.push({ g: star, vy: 18 + Math.random() * 46 });
     }
-    return false;
+    for (let i = 0; i < 10; i++) {
+      const mote = this.add.circle(
+        Math.random() * W,
+        Math.random() * H,
+        1.6 + Math.random() * 2,
+        i % 2 === 0 ? 0xe8ff47 : 0xff8bd1,
+        0.16 + Math.random() * 0.2,
+      );
+      mote.setDepth(3);
+      this.motes.push({ g: mote, vy: 28 + Math.random() * 40 });
+    }
+
+    const rails = this.add.graphics().setDepth(8);
+    rails.fillStyle(0x10141c, 0.92);
+    rails.fillRect(0, 0, 10, H);
+    rails.fillRect(W - 10, 0, 10, H);
+    rails.fillStyle(0xe8ff47, 0.55);
+    rails.fillRect(8, 0, 2, H);
+    rails.fillRect(W - 10, 0, 2, H);
+    rails.fillStyle(0x6ee7ff, 0.18);
+    rails.fillRect(0, 0, 6, H);
+    rails.fillRect(W - 6, 0, 6, H);
+  }
+
+  private tickDecor(s: number): void {
+    const play = this.phase === 'play' && this.time.now >= this.frozenUntil;
+    const drift = (play ? this.scrollSpeed() : 36) * s;
+    for (const star of this.stars) {
+      star.g.y += star.vy * s * (play ? 1.15 : 0.35);
+      if (star.g.y > H + 4) {
+        star.g.y = -4;
+        star.g.x = Math.random() * W;
+      }
+    }
+    for (const mote of this.motes) {
+      mote.g.y += drift * 0.55;
+      mote.g.x += Math.sin((mote.g.y + this.pulse * 40) * 0.04) * 0.3;
+      if (mote.g.y > H + 6) {
+        mote.g.y = -6;
+        mote.g.x = Math.random() * W;
+      }
+    }
+  }
+
+  private spawnTrail(): void {
+    if (this.time.now - this.lastTrail < 48) return;
+    this.lastTrail = this.time.now;
+    const dot = this.add.circle(this.px, this.py + 18, 3.2, 0xe8ff47, 0.34).setDepth(18);
+    this.tweens.add({
+      targets: dot,
+      y: this.py + 52,
+      alpha: 0,
+      scale: 0.15,
+      duration: 240,
+      onComplete: () => dot.destroy(),
+    });
+  }
+
+  private showHint(): void {
+    const hint = document.getElementById('play-hint');
+    if (hint) hint.hidden = false;
+  }
+
+  private hideHint(): void {
+    const hint = document.getElementById('play-hint');
+    if (hint) hint.hidden = true;
   }
 
   private gameOver(): void {
     if (this.phase !== 'play') return;
     this.phase = 'over';
+    this.holdingFire = false;
+    this.setFirePad(false);
+    this.hideHint();
     const prevBest = this.best;
     saveJumpBest(this.score);
     this.best = loadJumpBest();
     this.syncHud();
     this.frozenUntil = this.time.now + 90;
-    squashTo(this, this.player, 1.22, 0.7, 180);
-    this.cameras.main.shake(180, 0.012);
-    burstDots(this, PX, this.py, 0xe8ff47, 10);
-    screenWash(this, 0xff8bd1, 0.18, 260);
+    squashTo(this, this.rig.root, 1.24, 0.68, 180);
+    this.cameras.main.shake(190, 0.014);
+    burstDots(this, this.px, this.py, 0xff8bd1, 12);
+    screenWash(this, 0xff8bd1, 0.2, 280);
     sfxLand();
     sfxOver();
-    el('over-score').textContent = `Distancia ${this.score} · Mejor ${this.best}`;
+    el('over-score').textContent =
+      `Puntos ${this.score} · Distancia ${this.dist} · Bajas ${this.kills} · Mejor ${this.best}`;
     const rec = document.getElementById('over-record');
     if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
     this.time.delayedCall(140, () => {
@@ -403,14 +583,13 @@ export class JumpScene extends Phaser.Scene {
   private syncHud(): void {
     el('score').textContent = String(this.score);
     el('best').textContent = String(this.best);
-    const c = creature(5);
     const chip = document.getElementById('next-chip');
     if (chip) {
-      chip.style.background = c.hex;
-      chip.textContent = c.emoji;
-      chip.dataset.kind = c.kind;
+      chip.textContent = '';
+      chip.dataset.kind = 'craft';
+      chip.classList.add('jump-chip');
     }
     const code = document.getElementById('next-code');
-    if (code) code.textContent = c.code;
+    if (code) code.textContent = 'PULSO';
   }
 }

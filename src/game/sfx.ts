@@ -142,3 +142,19 @@ export function sfxOrbit(): void {
   tone(392, 0.1, 'triangle', 0.024, 0.05, 80);
   tone(523, 0.14, 'sine', 0.02, 0.11, 40);
 }
+
+export function sfxShot(): void {
+  tone(920, 0.032, 'square', 0.016, 0, -260);
+  rustle(0.028, 0.01, 0, 1400, 4200);
+}
+
+export function sfxHit(): void {
+  tone(196, 0.05, 'triangle', 0.028, 0, -70);
+  rustle(0.045, 0.018, 0, 280, 1500);
+}
+
+export function sfxKill(): void {
+  tone(392, 0.05, 'sine', 0.03);
+  tone(523, 0.07, 'triangle', 0.022, 0.028, 50);
+  rustle(0.05, 0.014, 0, 500, 2200);
+}
