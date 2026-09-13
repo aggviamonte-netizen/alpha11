@@ -1,6 +1,8 @@
 # ALPHA-11
 
-Hub PWA + four lab minigames for [alpha11.app](https://alpha11.app).
+Hub PWA + lab minigames for [alpha11.app](https://alpha11.app).
+
+Hub cards are a growing column (not a fixed set of four). This tree owns LAB vegetables + RUSH; other PRs append their own cards.
 
 Stack: Vite + Phaser 3 + Matter.js. TypeScript. Mobile-first 390×844.
 
@@ -11,7 +13,7 @@ npm i
 npm run dev
 ```
 
-Open `/` (hub), `/lab`, `/jump`, `/shift`, `/rush`, plus Vintage `/vintage/stack`, `/vintage/sudoku`, `/vintage/space`, `/vintage/fight`.
+Open `/` (hub), `/lab`, `/jump`, `/shift`, `/rush`, `/sniper`, plus Vintage `/vintage/stack`, `/vintage/sudoku`, `/vintage/space`, `/vintage/fight`.
 
 ## Build
 
@@ -29,7 +31,7 @@ Static hub (unchanged): build `dist` and publish as Workers Assets / Pages.
 
 API: `wrangler deploy` updates the existing Worker named `alpha11`. `run_worker_first` is only `/api/*`, so game routes stay on assets.
 
-Cloudflare Pages `_redirects` maps `/lab`, `/jump`, `/shift`, and `/rush` onto the multi-page folders.
+Cloudflare Pages `_redirects` maps `/lab`, `/jump`, `/shift`, `/rush`, `/sniper`, Vintage, and `/arcade` onto the multi-page folders.
 
 The same repo also ships a Cloudflare Worker (`name`: `alpha11`, matching the existing account Worker) that owns `/api/*` only. Hub HTML is not rewritten. Production already has KV namespace `alpha11-waitlist` (`86685a78b0e44830be548f12dcba3876`).
 
@@ -45,7 +47,7 @@ npm run deploy
 
 ## Play
 
-- Hub cards **LAB**, **JUMP**, **SHIFT**, **RUSH** plus Vintage **STACK / SUDOKU / SPACE / FIGHT**. Footer: Gratis · Añade a inicio de pantalla.
+- Hub cards **LAB**, **JUMP**, **SHIFT**, **RUSH**, **SNIPER** plus Vintage **STACK / SUDOKU / SPACE / FIGHT**. Footer: Gratis · Añade a inicio de pantalla.
 - Vintage games are vendored MIT static files under `public/vintage/` (credits: `/vintage/credits`, `vendor/NOTICE.md`).
 - **LAB** (`/lab`): 11 vegetable tiers (pea → Alpha veggie) with distinct silhouettes. Same-tier overlap ~200ms merges up. Keys: `alpha11_lab_score` / `alpha11_lab_best`.
 - **JUMP** (`/jump`): one-touch flap runner as A5 Berenjena through lab glass / beams. Score = distance. Best: `alpha11_jump_best`.

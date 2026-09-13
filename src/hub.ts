@@ -15,12 +15,16 @@ function paintOrb(id: string, tier: number): void {
 paintOrb('orb-lab', 3);
 paintOrb('orb-jump', 5);
 paintOrb('orb-shift', 7);
+paintOrb('orb-sniper', 6);
 
 const rush = document.getElementById('orb-rush');
 if (rush) {
   rush.textContent = '';
   rush.title = 'BLOK';
 }
+
+// Parallel PRs paint extra orbs when they append cards:
+// paintOrb('orb-kick', …) / paintOrb('orb-sniper', …)
 
 const row = document.getElementById('canon-row');
 if (row) {
