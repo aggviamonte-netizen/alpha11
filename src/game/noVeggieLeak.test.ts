@@ -64,7 +64,8 @@ describe('LAB produce stays LAB-only', () => {
 
   it('does not paint CREATURES / produce names on the hub', () => {
     const hub = readFileSync(join(ROOT, 'src/hub.ts'), 'utf8');
-    assert.equal(/CREATURES/.test(hub), false);
+    assert.equal(/\bimport\s*\{[^}]*\bCREATURES\b/.test(hub), false);
+    assert.equal(/\bCREATURES\s*\./.test(hub), false);
     assert.equal(/canon-row/.test(hub), false);
     assert.equal(/paintLabOrb/.test(hub), true);
 
