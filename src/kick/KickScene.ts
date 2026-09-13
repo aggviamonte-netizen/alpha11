@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { creature } from '../game/canon';
 import { el } from '../game/dom';
-import { burstDots, floatLabel, pulseRing, screenWash, squashTo } from '../game/juice';
+import { burstDots, pulseRing, screenWash, squashTo, UI_FONT } from '../game/juice';
 import { W } from '../game/layout';
 import { sfxOver, unlockSfx } from '../game/sfx';
 import { drawCreature } from '../game/sprites';
@@ -101,6 +101,9 @@ export class KickScene extends Phaser.Scene {
   private kickerShadow!: Phaser.GameObjects.Ellipse;
   private keeperShadow!: Phaser.GameObjects.Ellipse;
   private ballShadow!: Phaser.GameObjects.Ellipse;
+  private tellMark!: Phaser.GameObjects.Graphics;
+  private banner!: Phaser.GameObjects.Text;
+  private powerLbl!: Phaser.GameObjects.Text;
   private motes: Array<{ g: Phaser.GameObjects.Arc; vx: number; vy: number }> = [];
 
   constructor() {
@@ -126,12 +129,37 @@ export class KickScene extends Phaser.Scene {
     this.keeperShadow = this.add.ellipse(KEEPER_HOME.x, GOAL.lineY - 2, 42, 12, 0x000000, 0.3).setDepth(11);
     this.ballShadow = this.add.ellipse(SPOT.x, SPOT.y + 14, 22, 8, 0x000000, 0.26).setDepth(11);
 
-    this.keeper = drawCreature(this, KEEPER_HOME.x, KEEPER_HOME.y, 7, 28);
+    this.keeper = drawCreature(this, KEEPER_HOME.x, KEEPER_HOME.y, 7, 32);
     this.keeper.setDepth(16);
     this.gloves = addKeeperGloves(this, this.keeper);
 
-    this.kicker = drawCreature(this, KICKER_POS.x, KICKER_POS.y, 5, 30);
+    this.kicker = drawCreature(this, KICKER_POS.x, KICKER_POS.y, 5, 34);
     this.kicker.setDepth(20);
+
+    this.tellMark = this.add.graphics().setDepth(12);
+    this.banner = this.add
+      .text(W / 2, 400, '', {
+        fontFamily: UI_FONT,
+        fontSize: '42px',
+        color: '#E8FF47',
+        fontStyle: 'bold',
+        stroke: '#0B0B0C',
+        strokeThickness: 8,
+      })
+      .setOrigin(0.5)
+      .setDepth(30)
+      .setAlpha(0);
+    this.powerLbl = this.add
+      .text(W / 2, 732, 'POTENCIA', {
+        fontFamily: UI_FONT,
+        fontSize: '10px',
+        color: '#7CFFB2',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(25)
+      .setAlpha(0)
+      .setLetterSpacing(3);
 
     this.ball = drawLabBall(this, SPOT.x, SPOT.y);
     this.arrow = drawAimArrow(this);
@@ -169,6 +197,8 @@ export class KickScene extends Phaser.Scene {
       this.arrow.clear();
       this.meter.clear();
       this.reticle.clear();
+      this.tellMark.clear();
+      this.powerLbl.setAlpha(0);
       return;
     }
 
@@ -348,7 +378,6 @@ export class KickScene extends Phaser.Scene {
   private onGoal(x: number, y: number): void {
     this.phase = 'hold';
     this.score += 1;
-    const prevBest = this.best;
     saveKickBest(this.score);
     this.best = loadKickBest();
     this.syncHud();
@@ -357,7 +386,6 @@ export class KickScene extends Phaser.Scene {
     burstDots(this, x, y - 16, 0x7cffb2, 8);
     pulseRing(this, x, y, 0xe8ff47, 12, 3.2);
     screenWash(this, 0xe8ff47, 0.16, 240);
-    floatLabel(this, W / 2, 390, '¡GOL!', { color: '#E8FF47', size: '34px', lift: 56 });
     this.cameras.main.shake(160, 0.01);
     this.netRipple(x, y);
     this.tweens.add({
@@ -367,12 +395,11 @@ export class KickScene extends Phaser.Scene {
       duration: 180,
       ease: 'Quad.out',
     });
-    const rec = this.score > 0 && this.score >= this.best && this.score > prevBest;
-    if (rec) floatLabel(this, W / 2, 448, 'RÉCORD', { color: '#7CFFB2', size: '14px', lift: 28 });
-    this.time.delayedCall(980, () => {
+    this.popBanner('¡GOL!', '#E8FF47');
+    this.time.delayedCall(1280, () => {
       if (this.phase !== 'hold') return;
       this.phase = 'ready';
-      this.liveAt = this.time.now + 180;
+      this.liveAt = this.time.now + 200;
       this.resetKick(true);
     });
   }
@@ -389,14 +416,14 @@ export class KickScene extends Phaser.Scene {
       sfxSave();
       squashTo(this, this.keeper, 0.78, 1.18, 180);
       this.ball.setPosition(this.keeper.x + this.diveZone.x * 10, this.keeper.y - 8);
-      floatLabel(this, W / 2, 390, '¡PARA!', { color: '#6EE7FF', size: '32px', lift: 48 });
+      this.popBanner('¡PARA!', '#6EE7FF');
       burstDots(this, this.ball.x, this.ball.y, 0x6ee7ff, 10);
-      screenWash(this, 0x6ee7ff, 0.16, 260);
+      screenWash(this, 0x6ee7ff, 0.16, 320);
     } else if (kind === 'post') {
       sfxPost();
-      floatLabel(this, W / 2, 390, '¡PALO!', { color: '#FF7A45', size: '32px', lift: 48 });
+      this.popBanner('¡PALO!', '#FF7A45');
       burstDots(this, x, y, 0xff7a45, 10);
-      screenWash(this, 0xff7a45, 0.16, 240);
+      screenWash(this, 0xff7a45, 0.16, 300);
       this.tweens.add({
         targets: this.ball,
         x: x + (x < GOAL.cx ? -70 : 70),
@@ -406,9 +433,9 @@ export class KickScene extends Phaser.Scene {
       });
     } else {
       sfxWide();
-      floatLabel(this, W / 2, 390, '¡FUERA!', { color: '#FF8BD1', size: '32px', lift: 48 });
+      this.popBanner('¡FUERA!', '#FF8BD1');
       burstDots(this, x, y, 0xff8bd1, 8);
-      screenWash(this, 0xff8bd1, 0.14, 240);
+      screenWash(this, 0xff8bd1, 0.14, 300);
       this.tweens.add({
         targets: this.ball,
         x: clamp(x + this.aimAngle * 80, -20, W + 20),
@@ -422,7 +449,7 @@ export class KickScene extends Phaser.Scene {
     el('over-score').textContent = `Racha ${this.score} · Mejor ${this.best}`;
     const rec = document.getElementById('over-record');
     if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
-    this.time.delayedCall(160, () => {
+    this.time.delayedCall(880, () => {
       el('overlay-over').hidden = false;
     });
   }
@@ -471,28 +498,65 @@ export class KickScene extends Phaser.Scene {
 
   private applyKeeperTell(): void {
     const z = this.shownZone;
-    const lean = z.x * (14 + Math.min(8, this.score));
+    const lean = z.x * (22 + Math.min(10, this.score));
     const bob = Math.sin(this.pulse * 3.1) * 2;
-    const twitch = this.fake && this.tellClock > 0.55 ? Math.sin(this.tellClock * 22) * 3 : 0;
+    const twitch = this.fake && this.tellClock > 0.55 ? Math.sin(this.tellClock * 22) * 4 : 0;
     this.keeper.x = KEEPER_HOME.x + lean + twitch;
-    this.keeper.y = KEEPER_HOME.y + bob - z.y * 6;
-    this.keeper.setRotation(z.x * 0.16);
+    this.keeper.y = KEEPER_HOME.y + bob - z.y * 8;
+    this.keeper.setRotation(z.x * 0.22);
     this.keeperShadow.x = this.keeper.x;
-    this.gloves.left.setScale(z.x < 0 ? 1.28 : 0.92, z.y > 0.6 ? 1.18 : 1);
-    this.gloves.right.setScale(z.x > 0 ? 1.28 : 0.92, z.y > 0.6 ? 1.18 : 1);
+    this.gloves.left.setScale(z.x < 0 ? 1.4 : 0.9, z.y > 0.6 ? 1.22 : 1);
+    this.gloves.right.setScale(z.x > 0 ? 1.4 : 0.9, z.y > 0.6 ? 1.22 : 1);
     if (z.y > 0.65) {
-      this.gloves.left.y = -12;
-      this.gloves.right.y = -12;
+      this.gloves.left.y = -14;
+      this.gloves.right.y = -14;
     } else {
       this.gloves.left.y = -2;
       this.gloves.right.y = -2;
     }
+    this.drawTellMark(z);
+  }
+
+  private drawTellMark(z: { x: number; y: number }): void {
+    const g = this.tellMark;
+    g.clear();
+    const x = KEEPER_HOME.x + z.x * 48;
+    const y = GOAL.lineY + 10;
+    const color = 0xff7a45;
+    g.fillStyle(color, 0.85);
+    if (Math.abs(z.x) < 0.2) {
+      g.fillTriangle(x, y - 10, x - 8, y + 6, x + 8, y + 6);
+    } else {
+      const dir = Math.sign(z.x);
+      g.fillTriangle(x + dir * 12, y, x - dir * 6, y - 9, x - dir * 6, y + 9);
+    }
+    g.fillStyle(color, 0.2);
+    g.fillCircle(this.keeper.x, GOAL.lineY + 4, 16);
+  }
+
+  private popBanner(text: string, color: string): void {
+    this.tweens.killTweensOf(this.banner);
+    this.banner.setText(text).setColor(color).setAlpha(1).setScale(0.62).setY(400);
+    this.tweens.add({
+      targets: this.banner,
+      scale: 1.08,
+      y: 368,
+      duration: 180,
+      ease: 'Back.out',
+    });
+    this.tweens.add({
+      targets: this.banner,
+      alpha: 0,
+      delay: 720,
+      duration: 260,
+    });
   }
 
   private drawGuides(): void {
     const sweet = this.power > 0.55 && this.power < 0.86;
     renderAimArrow(this.arrow, SPOT.x, SPOT.y, this.aimAngle, this.aimHeight, sweet);
     renderPowerMeter(this.meter, this.power, sweet);
+    this.powerLbl.setAlpha(0.85).setColor(sweet ? '#E8FF47' : '#FF7A45');
     const ghost = targetFromAim(this.aimAngle, this.aimHeight);
     renderReticle(this.reticle, ghost.x, ghost.y, insideGoal(ghost.x, ghost.y, 2));
   }

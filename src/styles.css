@@ -253,7 +253,8 @@ button {
 }
 
 .kick-body .drop-hint {
-  bottom: 86px;
+  bottom: auto;
+  top: 54%;
 }
 
 .canon-row {

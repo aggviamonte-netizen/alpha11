@@ -3,16 +3,16 @@ import { H, W } from '../game/layout';
 
 export const GOAL = {
   cx: W * 0.5,
-  barY: 172,
-  lineY: 324,
-  innerL: 72,
-  innerR: 318,
-  post: 7,
+  barY: 168,
+  lineY: 328,
+  innerL: 64,
+  innerR: 326,
+  post: 9,
 };
 
-export const SPOT = { x: W * 0.5, y: 618 };
-export const KICKER_POS = { x: W * 0.5 + 58, y: 704 };
-export const KEEPER_HOME = { x: W * 0.5, y: 298 };
+export const SPOT = { x: W * 0.5, y: 608 };
+export const KICKER_POS = { x: W * 0.5 + 62, y: 698 };
+export const KEEPER_HOME = { x: W * 0.5, y: 292 };
 
 export function paintKickWorld(scene: Phaser.Scene): void {
   const g = scene.add.graphics().setDepth(0);
@@ -105,19 +105,21 @@ export function paintGoal(scene: Phaser.Scene): void {
   }
 
   const glow = scene.add.graphics().setDepth(5);
-  glow.lineStyle(10, 0x7cffb2, 0.12);
-  glow.strokeRoundedRect(innerL - 8, barY - 8, w + 16, h + 10, 8);
+  glow.lineStyle(16, 0x7cffb2, 0.16);
+  glow.strokeRoundedRect(innerL - 10, barY - 10, w + 20, h + 14, 10);
+  glow.lineStyle(6, 0xe8ff47, 0.22);
+  glow.strokeRoundedRect(innerL - 6, barY - 6, w + 12, h + 8, 8);
 
   const frame = scene.add.graphics().setDepth(6);
   frame.fillStyle(0xe8ff47, 1);
-  frame.fillRoundedRect(innerL - post, barY - post, w + post * 2, post, 4);
-  frame.fillRoundedRect(innerL - post, barY, post, h, 4);
-  frame.fillRoundedRect(innerR, barY, post, h, 4);
-  frame.fillStyle(0xffffff, 0.55);
-  frame.fillRect(innerL - post + 2, barY - post + 2, w + post * 2 - 8, 3);
+  frame.fillRoundedRect(innerL - post, barY - post, w + post * 2, post, 5);
+  frame.fillRoundedRect(innerL - post, barY, post, h, 5);
+  frame.fillRoundedRect(innerR, barY, post, h, 5);
+  frame.fillStyle(0xffffff, 0.62);
+  frame.fillRect(innerL - post + 2, barY - post + 2, w + post * 2 - 10, 3);
   frame.fillRect(innerL - post + 2, barY, 3, h - 4);
   frame.fillStyle(0x0b0b0c, 0.25);
-  frame.fillRect(innerR + 2, barY + 4, 3, h - 8);
+  frame.fillRect(innerR + 3, barY + 4, 3, h - 8);
 
   const boots = scene.add.graphics().setDepth(6);
   boots.fillStyle(0x1a1c20, 1);
@@ -127,19 +129,19 @@ export function paintGoal(scene: Phaser.Scene): void {
 
 export function drawLabBall(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Container {
   const root = scene.add.container(x, y).setDepth(22);
-  const glow = scene.add.circle(0, 0, 18, 0xe8ff47, 0.2);
-  const shade = scene.add.circle(1, 3, 13, 0x2a2c22, 1);
-  const body = scene.add.circle(0, 0, 13, 0xf4f1ea, 1);
+  const glow = scene.add.circle(0, 0, 22, 0xe8ff47, 0.26);
+  const shade = scene.add.circle(1, 3, 15, 0x2a2c22, 1);
+  const body = scene.add.circle(0, 0, 15, 0xf4f1ea, 1);
   const g = scene.add.graphics();
-  g.lineStyle(1.6, 0x7cffb2, 0.85);
-  g.strokeCircle(0, 0, 8.5);
-  g.lineStyle(1.2, 0xff7a45, 0.55);
+  g.lineStyle(2, 0x7cffb2, 0.9);
+  g.strokeCircle(0, 0, 10);
+  g.lineStyle(1.4, 0xff7a45, 0.6);
   g.beginPath();
-  g.arc(0, 0, 8.5, 0.4, 2.2);
+  g.arc(0, 0, 10, 0.4, 2.2);
   g.strokePath();
-  g.fillStyle(0x0b0b0c, 0.28);
-  g.fillCircle(0, 0, 2.4);
-  const hi = scene.add.ellipse(-4, -5, 7, 4, 0xffffff, 0.55);
+  g.fillStyle(0x0b0b0c, 0.3);
+  g.fillCircle(0, 0, 2.8);
+  const hi = scene.add.ellipse(-5, -6, 8, 4.5, 0xffffff, 0.55);
   root.add([glow, shade, body, g, hi]);
   return root;
 }
@@ -157,20 +159,20 @@ export function renderAimArrow(
   hot: boolean,
 ): void {
   g.clear();
-  const len = 78 + height * 36;
+  const len = 118 + height * 42;
   const ex = x + Math.sin(angle) * len;
-  const ey = y - Math.cos(angle) * len * (0.72 + height * 0.22);
+  const ey = y - Math.cos(angle) * len * (0.74 + height * 0.2);
   const color = hot ? 0xe8ff47 : 0x7cffb2;
-  g.lineStyle(5, color, 0.18);
+  g.lineStyle(12, color, 0.16);
   g.lineBetween(x, y, ex, ey);
-  g.lineStyle(2.4, color, 0.95);
+  g.lineStyle(5, color, 0.98);
   g.lineBetween(x, y, ex, ey);
   const nx = Math.sin(angle);
   const ny = -Math.cos(angle);
   const px = -ny;
   const py = nx;
   g.fillStyle(color, 1);
-  g.fillTriangle(ex + nx * 12, ey + ny * 12, ex + px * 7, ey + py * 7, ex - px * 7, ey - py * 7);
+  g.fillTriangle(ex + nx * 16, ey + ny * 16, ex + px * 10, ey + py * 10, ex - px * 10, ey - py * 10);
 }
 
 export function drawPowerMeter(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
@@ -178,22 +180,22 @@ export function drawPowerMeter(scene: Phaser.Scene): Phaser.GameObjects.Graphics
 }
 
 export function renderPowerMeter(g: Phaser.GameObjects.Graphics, power: number, sweet: boolean): void {
-  const x = 48;
-  const y = 778;
-  const w = W - 96;
-  const h = 16;
+  const x = 36;
+  const y = 746;
+  const w = W - 72;
+  const h = 18;
   g.clear();
-  g.fillStyle(0x0b0b0c, 0.55);
-  g.fillRoundedRect(x - 4, y - 4, w + 8, h + 8, 10);
+  g.fillStyle(0x0b0b0c, 0.62);
+  g.fillRoundedRect(x - 5, y - 5, w + 10, h + 10, 12);
   g.fillStyle(0x1a1e18, 1);
-  g.fillRoundedRect(x, y, w, h, 8);
-  g.fillStyle(0x7cffb2, 0.16);
-  g.fillRoundedRect(x + w * 0.55, y + 2, w * 0.3, h - 4, 6);
-  const fill = Math.max(0.04, Math.min(1, power));
-  g.fillStyle(sweet ? 0xe8ff47 : 0xff7a45, 0.95);
-  g.fillRoundedRect(x + 2, y + 2, (w - 4) * fill, h - 4, 6);
-  g.fillStyle(0xffffff, 0.35);
-  g.fillCircle(x + (w - 4) * fill, y + h / 2, 5);
+  g.fillRoundedRect(x, y, w, h, 9);
+  g.fillStyle(0x7cffb2, 0.22);
+  g.fillRoundedRect(x + w * 0.54, y + 2, w * 0.32, h - 4, 7);
+  const fill = Math.max(0.05, Math.min(1, power));
+  g.fillStyle(sweet ? 0xe8ff47 : 0xff7a45, 0.96);
+  g.fillRoundedRect(x + 2, y + 2, (w - 4) * fill, h - 4, 7);
+  g.fillStyle(0xffffff, 0.45);
+  g.fillCircle(x + 2 + (w - 4) * fill, y + h / 2, 6);
 }
 
 export function drawReticle(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
@@ -203,14 +205,16 @@ export function drawReticle(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
 export function renderReticle(g: Phaser.GameObjects.Graphics, x: number, y: number, valid: boolean): void {
   g.clear();
   const color = valid ? 0xe8ff47 : 0xff8bd1;
-  g.lineStyle(2, color, 0.85);
-  g.strokeCircle(x, y, 11);
-  g.lineStyle(1, color, 0.45);
-  g.strokeCircle(x, y, 18);
-  g.lineBetween(x - 16, y, x - 7, y);
-  g.lineBetween(x + 7, y, x + 16, y);
-  g.lineBetween(x, y - 16, x, y - 7);
-  g.lineBetween(x, y + 7, x, y + 16);
+  g.fillStyle(color, 0.12);
+  g.fillCircle(x, y, 16);
+  g.lineStyle(3, color, 0.95);
+  g.strokeCircle(x, y, 13);
+  g.lineStyle(2, color, 0.5);
+  g.strokeCircle(x, y, 22);
+  g.lineBetween(x - 20, y, x - 8, y);
+  g.lineBetween(x + 8, y, x + 20, y);
+  g.lineBetween(x, y - 20, x, y - 8);
+  g.lineBetween(x, y + 8, x, y + 20);
 }
 
 export function addKeeperGloves(
