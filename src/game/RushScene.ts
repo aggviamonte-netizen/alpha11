@@ -109,7 +109,7 @@ export class RushScene extends Phaser.Scene {
 
     this.paintWorld();
     this.lines = this.add.graphics().setDepth(16);
-    this.rig = drawBlok(this, PX, this.py - 28);
+    this.rig = drawBlok(this, PX, this.py - 36);
     this.seedTrack();
 
     this.input.on('pointerdown', () => {
@@ -153,7 +153,7 @@ export class RushScene extends Phaser.Scene {
     this.tickDecor(s);
 
     if (this.phase !== 'play') {
-      this.rig.root.setPosition(PX, this.py - 28 + Math.sin(this.pulse * 2.2) * 3);
+      this.rig.root.setPosition(PX, this.py - 36 + Math.sin(this.pulse * 2.2) * 3);
       poseBlok(this.rig, this.pulse * 8, true, 0, false);
       this.placeProps();
       return;
@@ -258,7 +258,7 @@ export class RushScene extends Phaser.Scene {
     }
 
     this.run += s * (this.grounded ? this.speed() * 0.045 : 2);
-    this.rig.root.setPosition(PX, this.py - 28);
+    this.rig.root.setPosition(PX, this.py - 36);
     poseBlok(this.rig, this.run, this.grounded, this.vy, this.boostT > 0);
   }
 
@@ -364,15 +364,15 @@ export class RushScene extends Phaser.Scene {
 
   private paintWorld(): void {
     const g = this.add.graphics().setDepth(0);
-    g.fillStyle(0x10141c, 1);
+    g.fillStyle(0x121822, 1);
     g.fillRect(0, 0, W, H);
-    g.fillStyle(0xe8ff47, 0.05);
-    g.fillCircle(40, 90, 120);
-    g.fillStyle(0xff9a3c, 0.05);
-    g.fillCircle(340, 210, 110);
-    g.fillStyle(0x6ee7ff, 0.04);
-    g.fillCircle(200, 760, 150);
-    g.fillStyle(0x0b0b0c, 0.35);
+    g.fillStyle(0xe8ff47, 0.08);
+    g.fillCircle(36, 96, 140);
+    g.fillStyle(0xff9a3c, 0.08);
+    g.fillCircle(350, 200, 130);
+    g.fillStyle(0x6ee7ff, 0.06);
+    g.fillCircle(200, 760, 160);
+    g.fillStyle(0x0b0b0c, 0.28);
     g.fillRect(0, GROUND + 8, W, H - GROUND);
 
     const grid = this.add.graphics().setDepth(1);
@@ -398,16 +398,19 @@ export class RushScene extends Phaser.Scene {
     const rail = this.add.graphics().setDepth(8);
     rail.fillStyle(0x151820, 1);
     rail.fillRect(0, GROUND + 18, W, H - GROUND - 18);
-    rail.fillStyle(0x2a3140, 1);
-    rail.fillRect(0, GROUND + 18, W, 10);
-    rail.fillStyle(0xe8ff47, 0.8);
-    for (let x = 0; x < W; x += 14) rail.fillRect(x, GROUND + 20, 8, 3);
+    rail.fillStyle(0x3a4458, 1);
+    rail.fillRect(0, GROUND + 16, W, 14);
+    rail.fillStyle(0xe8ff47, 0.95);
+    for (let x = 0; x < W; x += 14) rail.fillRect(x, GROUND + 18, 9, 4);
+    rail.fillStyle(0xf4f1ea, 0.18);
+    rail.fillRect(0, GROUND + 16, W, 3);
   }
 
   private seedTrack(): void {
-    this.addPlat(-80, 700);
-    this.scatterCores(80, 220, GROUND - 90, 5);
-    this.spawnX = 620;
+    this.addPlat(-80, 760);
+    this.scatterCores(140, 280, GROUND - 96, 6);
+    this.addPad(420);
+    this.spawnX = 680;
     this.spawnAhead();
   }
 

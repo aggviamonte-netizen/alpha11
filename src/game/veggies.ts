@@ -79,10 +79,10 @@ function carrot(g: Phaser.GameObjects.Graphics, r: number, c: number): void {
   ]);
   g.fillStyle(c, 1);
   poly(g, [
-    { x: 0, y: -r * 0.82 },
-    { x: r * 0.42, y: r * 0.12 },
-    { x: 0, y: r * 1.08 },
-    { x: -r * 0.42, y: r * 0.12 },
+    { x: 0, y: -r * 0.95 },
+    { x: r * 0.32, y: r * 0.08 },
+    { x: 0, y: r * 1.22 },
+    { x: -r * 0.32, y: r * 0.08 },
   ]);
   g.fillStyle(lighten(c, 0.22), 0.45);
   g.fillTriangle(-r * 0.12, -r * 0.7, -r * 0.02, r * 0.7, -r * 0.28, r * 0.05);
