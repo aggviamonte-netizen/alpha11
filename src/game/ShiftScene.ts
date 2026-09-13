@@ -147,24 +147,24 @@ export class ShiftScene extends Phaser.Scene {
     bg.fillCircle(60, 120, 70);
 
     const g = this.add.graphics();
-    g.fillStyle(0x1a1c22, 1);
+    g.fillStyle(0x2a2d38, 1);
     g.fillRoundedRect(ORIGIN_X - 18, ORIGIN_Y - 18, BOARD + 36, BOARD + 36, 26);
-    g.fillStyle(0x121318, 1);
+    g.fillStyle(0x1a1c24, 1);
     g.fillRoundedRect(ORIGIN_X - 12, ORIGIN_Y - 12, BOARD + 24, BOARD + 24, 22);
-    g.lineStyle(2, 0x6ee7ff, 0.45);
+    g.lineStyle(2, 0x6ee7ff, 0.55);
     g.strokeRoundedRect(ORIGIN_X - 14, ORIGIN_Y - 14, BOARD + 28, BOARD + 28, 22);
-    g.lineStyle(1, 0xf4f1ea, 0.12);
+    g.lineStyle(1, 0xf4f1ea, 0.16);
     g.strokeRoundedRect(ORIGIN_X - 8, ORIGIN_Y - 8, BOARD + 16, BOARD + 16, 18);
 
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
         const x = ORIGIN_X + c * (CELL + GAP);
         const y = ORIGIN_Y + r * (CELL + GAP);
-        g.fillStyle(0x1c1d24, 1);
+        g.fillStyle(0x2a2c36, 1);
         g.fillRoundedRect(x, y, CELL, CELL, 16);
-        g.fillStyle(0x000000, 0.18);
+        g.fillStyle(0x000000, 0.16);
         g.fillRoundedRect(x + 4, y + 8, CELL - 8, CELL - 12, 12);
-        g.lineStyle(1, 0xffffff, 0.08);
+        g.lineStyle(1, 0xffffff, 0.12);
         g.strokeRoundedRect(x + 1, y + 1, CELL - 2, CELL - 2, 15);
       }
     }

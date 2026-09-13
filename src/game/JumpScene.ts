@@ -214,15 +214,15 @@ export class JumpScene extends Phaser.Scene {
   private paintWorld(): void {
     paintLabBackdrop(this);
     const wash = this.add.graphics().setDepth(0);
-    wash.fillStyle(0x10141c, 0.72);
+    wash.fillStyle(0x141822, 0.82);
     wash.fillRect(0, 0, W, H);
-    wash.fillStyle(0x6ee7ff, 0.045);
-    wash.fillEllipse(W * 0.2, 150, 220, 90);
-    wash.fillStyle(0xff8bd1, 0.04);
-    wash.fillEllipse(W * 0.78, 680, 240, 100);
+    wash.fillStyle(0x6ee7ff, 0.08);
+    wash.fillEllipse(W * 0.22, 150, 240, 110);
+    wash.fillStyle(0xff8bd1, 0.07);
+    wash.fillEllipse(W * 0.78, 680, 260, 120);
 
     const grid = this.add.graphics().setDepth(1);
-    grid.lineStyle(1, 0xf4f1ea, 0.05);
+    grid.lineStyle(1, 0xf4f1ea, 0.08);
     for (let x = 0; x <= W; x += 28) grid.lineBetween(x, 0, x, H);
     for (let y = 0; y <= H; y += 28) grid.lineBetween(0, y, W, y);
 
@@ -251,12 +251,12 @@ export class JumpScene extends Phaser.Scene {
     }
 
     const rails = this.add.graphics().setDepth(8);
-    rails.fillStyle(0x10141a, 1);
+    rails.fillStyle(0x1a202a, 1);
     rails.fillRect(0, 0, W, RAIL);
     rails.fillRect(0, H - RAIL, W, RAIL);
-    rails.fillStyle(0xffffff, 0.06);
+    rails.fillStyle(0xffffff, 0.1);
     rails.fillRect(0, RAIL - 10, W, 6);
-    rails.fillStyle(0xf4f1ea, 0.18);
+    rails.fillStyle(0xf4f1ea, 0.28);
     rails.fillRect(0, RAIL - 4, W, 4);
     rails.fillRect(0, H - RAIL, W, 4);
     rails.lineStyle(2, 0xe8ff47, 0.75);

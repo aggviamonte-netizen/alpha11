@@ -114,16 +114,18 @@ function addPattern(scene: Phaser.Scene, r: number, color: number, tier: number)
 
 export function paintLabBackdrop(scene: Phaser.Scene): void {
   const g = scene.add.graphics().setDepth(0);
-  g.fillStyle(0x0b0b0c, 1);
+  g.fillStyle(0x101014, 1);
   g.fillRect(0, 0, W, H);
-  g.fillStyle(0x12141a, 1);
-  g.fillRect(0, 0, W, 210);
-  g.fillStyle(0xe8ff47, 0.03);
-  g.fillCircle(48, 70, 90);
-  g.fillStyle(0x6ee7ff, 0.025);
-  g.fillCircle(W - 30, 160, 80);
-  g.fillStyle(0x050506, 0.28);
-  g.fillRect(0, 730, W, H - 730);
+  g.fillStyle(0x171820, 1);
+  g.fillRect(0, 0, W, 230);
+  g.fillStyle(0xe8ff47, 0.055);
+  g.fillCircle(52, 78, 110);
+  g.fillStyle(0x6ee7ff, 0.045);
+  g.fillCircle(W - 24, 168, 96);
+  g.fillStyle(0xff8bd1, 0.03);
+  g.fillCircle(W * 0.5, 760, 140);
+  g.fillStyle(0x050506, 0.22);
+  g.fillRect(0, 740, W, H - 740);
 }
 
 export function paintArena(scene: Phaser.Scene): void {
@@ -132,36 +134,38 @@ export function paintArena(scene: Phaser.Scene): void {
   const wellW = INNER_R - INNER_L;
   const wellH = FLOOR_Y - WELL_TOP;
 
-  g.fillStyle(0x26262e, 1);
-  g.fillRoundedRect(INNER_L - 7, WELL_TOP - 8, wellW + 14, wellH + WALL + 12, 28);
-  g.fillStyle(0x1a1a20, 1);
-  g.fillRoundedRect(INNER_L - 2, WELL_TOP - 2, wellW + 4, wellH + 6, 22);
-  g.fillStyle(0x101014, 1);
+  g.fillStyle(0x3a3b46, 1);
+  g.fillRoundedRect(INNER_L - 8, WELL_TOP - 10, wellW + 16, wellH + WALL + 16, 28);
+  g.fillStyle(0x2a2b36, 1);
+  g.fillRoundedRect(INNER_L - 3, WELL_TOP - 3, wellW + 6, wellH + 8, 22);
+  g.fillStyle(0x1c1d26, 1);
   g.fillRoundedRect(INNER_L, WELL_TOP, wellW, wellH + 2, 20);
-  g.fillStyle(0x16161c, 1);
-  g.fillRoundedRect(INNER_L + 5, WELL_TOP + 12, wellW - 10, wellH - 18, 16);
+  g.fillStyle(0x23242e, 1);
+  g.fillRoundedRect(INNER_L + 6, WELL_TOP + 14, wellW - 12, wellH - 22, 16);
 
-  g.fillStyle(0xe8ff47, 0.04);
-  g.fillRoundedRect(INNER_L + 8, WELL_TOP + 8, wellW - 16, 26, 12);
-  g.fillStyle(0xf4f1ea, 0.05);
-  g.fillRoundedRect(INNER_L + 14, FLOOR_Y - 22, wellW - 28, 16, 8);
+  g.fillStyle(0xe8ff47, 0.07);
+  g.fillRoundedRect(INNER_L + 10, WELL_TOP + 8, wellW - 20, 30, 12);
+  g.fillStyle(0xf4f1ea, 0.08);
+  g.fillRoundedRect(INNER_L + 16, FLOOR_Y - 26, wellW - 32, 18, 8);
 
-  g.fillStyle(0xf4f1ea, 0.18);
+  g.fillStyle(0xd8d4cc, 0.55);
   g.fillRect(INNER_L - WALL, WELL_TOP - 4, WALL, FLOOR_Y - (WELL_TOP - 4) + WALL);
   g.fillRect(INNER_R, WELL_TOP - 4, WALL, FLOOR_Y - (WELL_TOP - 4) + WALL);
   g.fillRect(INNER_L - WALL, FLOOR_Y, wellW + WALL * 2, WALL);
 
-  g.fillStyle(0xffffff, 0.1);
-  g.fillRect(INNER_L - WALL + 3, WELL_TOP, 3, FLOOR_Y - WELL_TOP);
-  g.fillStyle(0xf4f1ea, 0.28);
-  g.fillRect(INNER_L - WALL, FLOOR_Y, wellW + WALL * 2, 3);
+  g.fillStyle(0xffffff, 0.22);
+  g.fillRect(INNER_L - WALL + 3, WELL_TOP, 4, FLOOR_Y - WELL_TOP);
+  g.fillStyle(0xf4f1ea, 0.5);
+  g.fillRect(INNER_L - WALL, FLOOR_Y, wellW + WALL * 2, 4);
+  g.fillStyle(0x2a2c36, 1);
+  g.fillRect(INNER_L + 2, FLOOR_Y - 6, wellW - 4, 6);
 
-  g.fillStyle(0xff3b4a, 0.055);
-  g.fillRect(INNER_L, DANGER_Y - 16, wellW, 32);
+  g.fillStyle(0xff3b4a, 0.1);
+  g.fillRect(INNER_L, DANGER_Y - 18, wellW, 36);
 
-  g.lineStyle(1.5, 0xe8ff47, 0.16);
+  g.lineStyle(2, 0xe8ff47, 0.22);
   g.strokeRoundedRect(INNER_L + 1, WELL_TOP + 1, wellW - 2, wellH - 2, 18);
-  g.lineStyle(1, 0xffffff, 0.08);
+  g.lineStyle(1, 0xffffff, 0.12);
   g.strokeRoundedRect(INNER_L + 6, WELL_TOP + 8, wellW - 12, wellH - 16, 14);
 }
 
