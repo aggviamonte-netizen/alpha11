@@ -1,0 +1,378 @@
+/* ALPHA-11 hub shell around vendored stickfighter. Does not change game.js. */
+:root {
+  --bg: #0b0b0c;
+  --accent: #e8ff47;
+  --pink: #ff8bd1;
+  --text: #f4f1ea;
+  --muted: rgba(244, 241, 234, 0.42);
+  --card: #141418;
+  --line: rgba(244, 241, 234, 0.1);
+  --pad-safe-t: env(safe-area-inset-top, 0px);
+  --pad-safe-r: env(safe-area-inset-right, 0px);
+  --pad-safe-b: env(safe-area-inset-bottom, 0px);
+  --pad-safe-l: env(safe-area-inset-left, 0px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Outfit, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body,
+.fight-shell {
+  overflow: hidden;
+}
+
+body {
+  min-height: 100dvh;
+  min-height: 100svh;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
+.fight-shell {
+  height: 100dvh;
+  height: 100svh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'hud'
+    'play'
+    'pad';
+  padding: var(--pad-safe-t) var(--pad-safe-r) var(--pad-safe-b) var(--pad-safe-l);
+}
+
+.fight-hud {
+  grid-area: hud;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  pointer-events: auto;
+}
+
+.fight-hud a,
+.fight-hud button {
+  pointer-events: auto;
+}
+
+.fight-back,
+.fight-pause {
+  border: 1px solid var(--line);
+  background: #17171c;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  min-height: 36px;
+}
+
+.fight-pause {
+  font: inherit;
+  cursor: pointer;
+}
+
+.fight-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.fight-brand svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.fight-play {
+  grid-area: play;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(255, 139, 209, 0.08), transparent 56%),
+    #0b0b0c;
+}
+
+.game-wrapper {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+#player1-controls,
+#player2-controls,
+.game-title,
+.pause-instruction {
+  display: none !important;
+}
+
+#game-container {
+  position: relative;
+  width: min(100%, calc(100% * 2 / 1));
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 2 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #101014;
+  border: 0;
+  border-radius: 12px;
+  touch-action: none;
+}
+
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 11, 12, 0.55);
+  display: none;
+  z-index: 3;
+}
+
+#menu-overlay,
+#pause-menu,
+#game-over-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92%, 320px);
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+  z-index: 4;
+  text-align: center;
+  color: var(--text);
+}
+
+#menu-overlay {
+  display: none;
+}
+
+#pause-menu,
+#game-over-menu {
+  display: none;
+}
+
+.input-group,
+#single-player-inputs,
+#multiplayer-inputs {
+  display: none;
+}
+
+.menu-button,
+.player-name-input {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 8px auto;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 0;
+  font: inherit;
+  font-weight: 800;
+}
+
+.menu-button {
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+.back-button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.player-name-input {
+  background: #17171c;
+  color: var(--text);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.input-label,
+.pause-title,
+#winner-message,
+.winner-text {
+  color: var(--text);
+  margin: 0 0 12px;
+}
+
+.fight-pad {
+  grid-area: pad;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px 12px 8px;
+}
+
+.fight-cluster {
+  display: grid;
+  gap: 8px;
+}
+
+.fight-cluster-move {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    '. up .'
+    'left down right';
+}
+
+.fight-cluster-act {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.fight-key {
+  min-height: 52px;
+  border: 0;
+  border-radius: 16px;
+  background: #1b1b20;
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  box-shadow: inset 0 1px 0 rgba(244, 241, 234, 0.06);
+  touch-action: none;
+  cursor: pointer;
+}
+
+.fight-key[data-key='w'] {
+  grid-area: up;
+}
+
+.fight-key[data-key='a'] {
+  grid-area: left;
+}
+
+.fight-key[data-key='s'] {
+  grid-area: down;
+}
+
+.fight-key[data-key='d'] {
+  grid-area: right;
+}
+
+.fight-key-acc {
+  background: var(--pink);
+  color: #1a0b14;
+}
+
+.fight-key-fire {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.fight-key.is-down,
+.fight-key:active {
+  transform: scale(0.97);
+  filter: brightness(1.12);
+}
+
+.fight-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .fight-shell {
+    grid-template-columns: minmax(132px, 22vw) minmax(0, 1fr) minmax(132px, 22vw);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'hud hud hud'
+      'move play act';
+  }
+
+  .fight-play {
+    padding: 0 6px;
+  }
+
+  .fight-pad {
+    display: contents;
+  }
+
+  .fight-cluster-move {
+    grid-area: move;
+    align-self: end;
+    padding: 0 8px 8px;
+  }
+
+  .fight-cluster-act {
+    grid-area: act;
+    align-self: end;
+    padding: 0 8px 8px;
+    grid-template-columns: 1fr;
+  }
+
+  .fight-hint {
+    display: none;
+  }
+
+  .fight-key {
+    min-height: 44px;
+  }
+
+  .fight-hud {
+    padding: 6px 10px;
+  }
+}
+
+@media (min-width: 900px) and (min-height: 561px) {
+  .fight-shell {
+    width: min(100vw, 920px);
+    margin: 0 auto;
+  }
+}
