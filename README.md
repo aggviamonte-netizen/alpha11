@@ -4,7 +4,7 @@ Hub PWA + lab minigames for [alpha11.app](https://alpha11.app).
 
 Hub cards are a growing column (not a fixed set of four). This tree owns LAB vegetables + RUSH; other PRs append their own cards.
 
-Stack: Vite + Phaser 3 + Matter.js. TypeScript. Mobile-first 390×844.
+Stack: Vite + Phaser 3 (LAB / JUMP / SHIFT) + Three.js (RUSH). TypeScript. Mobile-first 390×844.
 
 ## Local
 
@@ -52,7 +52,7 @@ npm run deploy
 - **LAB** (`/lab`): 11 vegetable tiers (pea → Alpha veggie) with distinct silhouettes. Same-tier overlap ~200ms merges up. Keys: `alpha11_lab_score` / `alpha11_lab_best`.
 - **JUMP** (`/jump`): one-touch flap runner as A5 Berenjena through lab glass / beams. Score = distance. Best: `alpha11_jump_best`.
 - **SHIFT** (`/shift`): 4×4 swipe merge, A1 → higher vegetable tiers. Keys: `alpha11_shift_score` / `alpha11_shift_best`.
-- **RUSH** (`/rush`): BLOK auto-run speed platformer. Hold to jump. Best: `alpha11_rush_best`.
+- **RUSH** (`/rush`): BLOK 3D speed platformer — chase cam, ramps, núcleos. Touch SALTO / TURBO. Best: `alpha11_rush_best`.
 - **KICK** (`/kick`): penalty shootout. Drag to aim, tap to shoot, read the keeper tell. Streak best: `alpha11_kick_best`.
 - **SNIPER** (`/sniper`): hold to aim, release to fire. Best: `alpha11_sniper_best`.
 
