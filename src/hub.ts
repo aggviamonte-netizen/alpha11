@@ -16,6 +16,12 @@ paintOrb('orb-lab', 3);
 paintOrb('orb-jump', 5);
 paintOrb('orb-shift', 7);
 
+const rush = document.getElementById('orb-rush');
+if (rush) {
+  rush.textContent = '';
+  rush.title = 'BLOK';
+}
+
 const row = document.getElementById('canon-row');
 if (row) {
   const featured = CREATURES.filter((c) => [1, 3, 5, 7, 11].includes(c.tier));

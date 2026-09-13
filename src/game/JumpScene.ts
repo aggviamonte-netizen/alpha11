@@ -408,6 +408,7 @@ export class JumpScene extends Phaser.Scene {
     if (chip) {
       chip.style.background = c.hex;
       chip.textContent = c.emoji;
+      chip.dataset.kind = c.kind;
     }
     const code = document.getElementById('next-code');
     if (code) code.textContent = c.code;

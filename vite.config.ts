@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import type { Connect, Plugin } from 'vite';
 import { defineConfig } from 'vite';
 
-const PAGES = ['/lab', '/jump', '/shift'];
+const PAGES = ['/lab', '/jump', '/shift', '/rush'];
 
 function rewritePages(): Connect.NextHandleFunction {
   return (req, _res, next) => {
@@ -37,6 +37,7 @@ export default defineConfig({
         lab: resolve(__dirname, 'lab/index.html'),
         jump: resolve(__dirname, 'jump/index.html'),
         shift: resolve(__dirname, 'shift/index.html'),
+        rush: resolve(__dirname, 'rush/index.html'),
       },
     },
   },

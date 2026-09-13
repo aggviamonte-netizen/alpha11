@@ -482,7 +482,8 @@ export class ShiftScene extends Phaser.Scene {
     const chip = document.getElementById('next-chip');
     if (chip) {
       chip.style.background = c.hex;
-      chip.textContent = top ? c.emoji : '🫧';
+      chip.textContent = top ? c.emoji : '🟢';
+      chip.dataset.kind = top ? c.kind : 'circle';
     }
     const code = document.getElementById('next-code');
     if (code) code.textContent = top ? c.code : 'MAX';
