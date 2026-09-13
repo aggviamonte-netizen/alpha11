@@ -1,10 +1,11 @@
-const CACHE = 'alpha11-v3';
+const CACHE = 'alpha11-v4';
 const SHELL = [
   '/',
   '/lab/',
   '/jump/',
   '/shift/',
   '/rush/',
+  '/sniper/',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
