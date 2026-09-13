@@ -1,7 +1,7 @@
 {
   "name": "ALPHA-11",
   "short_name": "ALPHA-11",
-  "description": "Hub, LAB, JUMP y SHIFT para alpha11.app",
+  "description": "Hub, LAB, JUMP, SHIFT y RUSH para alpha11.app",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import { creature, radiusPx, rollDropTier } from './canon';
+import { creature, halfWidthPx, radiusPx, rollDropTier } from './canon';
 import { DANGER_Y, DROP_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL } from './layout';
 import { burstDots, floatLabel, screenWash, squashTo } from './juice';
 import { loadBest, mergePoints, popPoints, resetScore, saveScore } from './score';
 import { sfxDrop, sfxMerge, sfxOver, sfxPop, unlockSfx } from './sfx';
 import { drawCreature, paintArena } from './sprites';
+import { addVeggieBody } from './veggieBody';
 
 export { H, W };
 
@@ -36,6 +37,12 @@ let nextPieceId = 1;
 
 function pairKey(a: number, b: number): string {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
+}
+
+function aabbTouch(a: Piece, b: Piece, pad: number): boolean {
+  const A = a.body.bounds;
+  const B = b.body.bounds;
+  return A.min.x <= B.max.x + pad && A.max.x >= B.min.x - pad && A.min.y <= B.max.y + pad && A.max.y >= B.min.y - pad;
 }
 
 function el<T extends HTMLElement>(id: string): T {
@@ -108,17 +115,18 @@ export class LabScene extends Phaser.Scene {
 
   update(): void {
     if (this.preview) {
-      const r = radiusPx(this.preview.tier);
-      const x = Phaser.Math.Clamp(this.input.activePointer.x, INNER_L + r, INNER_R - r);
+      const hw = halfWidthPx(this.preview.tier);
+      const x = Phaser.Math.Clamp(this.input.activePointer.x, INNER_L + hw, INNER_R - hw);
       this.preview.x = x;
       this.preview.root.setPosition(x, DROP_Y);
-      this.drawGuide(x, r);
+      this.drawGuide(x, hw);
     } else {
       this.guide.clear();
     }
 
     for (const p of this.pieces) {
       p.root.setPosition(p.body.position.x, p.body.position.y);
+      p.root.setRotation(p.body.angle);
     }
 
     if (this.phase !== 'play') return;
@@ -180,10 +188,10 @@ export class LabScene extends Phaser.Scene {
     this.danger.strokePath();
   }
 
-  private drawGuide(x: number, r: number): void {
+  private drawGuide(x: number, _r: number): void {
     this.guide.clear();
     this.guide.lineStyle(1.5, 0xe8ff47, 0.2);
-    const top = DROP_Y + r + 6;
+    const top = DROP_Y + 14;
     for (let y = top; y < FLOOR_Y - 6; y += 10) {
       this.guide.beginPath();
       this.guide.moveTo(x, y);
@@ -201,8 +209,8 @@ export class LabScene extends Phaser.Scene {
     const root = drawCreature(this, 0, 0, tier);
     root.setAlpha(0.92);
     root.setScale(0.74);
-    const r = radiusPx(tier);
-    const x = Phaser.Math.Clamp(this.input.activePointer.x || W / 2, INNER_L + r, INNER_R - r);
+    const hw = halfWidthPx(tier);
+    const x = Phaser.Math.Clamp(this.input.activePointer.x || W / 2, INNER_L + hw, INNER_R - hw);
     root.setPosition(x, DROP_Y);
     this.tweens.add({
       targets: root,
@@ -249,7 +257,7 @@ export class LabScene extends Phaser.Scene {
 
   private spawn(tier: number, x: number, y: number, popIn: boolean): Piece {
     const radius = radiusPx(tier);
-    const body = this.matter.add.circle(x, y, radius, {
+    const body = addVeggieBody(this, x, y, tier, radius, {
       restitution: 0.14,
       friction: 0.44,
       frictionAir: 0.012,
@@ -319,10 +327,7 @@ export class LabScene extends Phaser.Scene {
       for (let j = i + 1; j < list.length; j++) {
         const b = list[j];
         if (!b || b.locked || a.tier !== b.tier || !b.body?.position) continue;
-        const dx = a.body.position.x - b.body.position.x;
-        const dy = a.body.position.y - b.body.position.y;
-        const lim = a.radius + b.radius + 1.5;
-        if (dx * dx + dy * dy > lim * lim) continue;
+        if (!aabbTouch(a, b, 2.5)) continue;
         const key = pairKey(a.id, b.id);
         seen.add(key);
         const hit = this.contacts.get(key);
@@ -406,7 +411,7 @@ export class LabScene extends Phaser.Scene {
     let hot = false;
     for (const p of this.pieces) {
       if (p.locked) continue;
-      const top = p.body.position.y - p.radius;
+      const top = p.body.bounds.min.y;
       if (top > DANGER_Y) {
         p.cleared = true;
         p.overSince = null;
@@ -457,6 +462,8 @@ export class LabScene extends Phaser.Scene {
     const chip = el<HTMLElement>('next-chip');
     chip.style.background = next.hex;
     chip.textContent = next.emoji;
+    chip.dataset.kind = next.kind;
+    chip.title = `${next.code} ${next.name}`;
     el('next-code').textContent = next.code;
   }
 

@@ -125,3 +125,20 @@ export function sfxWin(): void {
   tone(523, 0.08, 'sine', 0.032, 0.06);
   tone(659, 0.12, 'sine', 0.03, 0.12, 20);
 }
+
+export function sfxCore(): void {
+  tone(660, 0.05, 'sine', 0.03);
+  tone(880, 0.07, 'triangle', 0.022, 0.025);
+}
+
+export function sfxBoost(): void {
+  tone(392, 0.07, 'triangle', 0.032, 0, 90);
+  tone(523, 0.1, 'sine', 0.026, 0.04, 70);
+  rustle(0.08, 0.02, 0, 800, 2800);
+}
+
+export function sfxOrbit(): void {
+  tone(262, 0.08, 'sine', 0.03, 0, 120);
+  tone(392, 0.1, 'triangle', 0.024, 0.05, 80);
+  tone(523, 0.14, 'sine', 0.02, 0.11, 40);
+}
