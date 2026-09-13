@@ -81,6 +81,7 @@ export class KickScene extends Phaser.Scene {
   private phase: Phase = 'start';
   private score = 0;
   private best = 0;
+  private newRecord = false;
   private pulse = 0;
   private aimAngle = 0;
   private aimHeight = 0.48;
@@ -114,6 +115,7 @@ export class KickScene extends Phaser.Scene {
     this.phase = 'start';
     this.score = 0;
     this.best = loadKickBest();
+    this.newRecord = false;
     this.pulse = 0;
     this.aimAngle = 0;
     this.aimHeight = 0.48;
@@ -227,6 +229,7 @@ export class KickScene extends Phaser.Scene {
     el('overlay-start').onclick = null;
     this.phase = 'ready';
     this.score = 0;
+    this.newRecord = false;
     this.liveAt = this.time.now + 240;
     this.syncHud();
     this.resetKick(true);
@@ -378,6 +381,7 @@ export class KickScene extends Phaser.Scene {
   private onGoal(x: number, y: number): void {
     this.phase = 'hold';
     this.score += 1;
+    if (this.score > this.best) this.newRecord = true;
     saveKickBest(this.score);
     this.best = loadKickBest();
     this.syncHud();
@@ -406,7 +410,6 @@ export class KickScene extends Phaser.Scene {
 
   private onMiss(kind: Outcome, x: number, y: number): void {
     this.phase = 'over';
-    const prevBest = this.best;
     saveKickBest(this.score);
     this.best = loadKickBest();
     this.syncHud();
@@ -448,7 +451,7 @@ export class KickScene extends Phaser.Scene {
 
     el('over-score').textContent = `Racha ${this.score} · Mejor ${this.best}`;
     const rec = document.getElementById('over-record');
-    if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
+    if (rec) rec.hidden = !(this.score > 0 && this.newRecord);
     this.time.delayedCall(880, () => {
       el('overlay-over').hidden = false;
     });
