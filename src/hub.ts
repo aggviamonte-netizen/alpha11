@@ -1,4 +1,3 @@
-import { creature, CREATURES } from './game/canon';
 import { bootStudio } from './studio';
 
 // Inventory placeholders live in HTML as [data-ad-slot] matching worker INVENTORY_SLOTS:
@@ -10,14 +9,15 @@ import { bootStudio } from './studio';
 
 bootStudio();
 
-/** LAB is the only hub card that may wear the vegetable ladder. */
+/** LAB card only — hardcoded so the hub bundle never loads the produce ladder. */
+const LAB_ORB = { hex: '#FF8A2A', emoji: '🥕', title: 'LAB A3 Zanahoria' };
+
 function paintLabOrb(): void {
   const node = document.getElementById('orb-lab');
   if (!node) return;
-  const c = creature(3);
-  node.style.background = c.hex;
-  node.textContent = c.emoji;
-  node.title = `${c.code} ${c.name}`;
+  node.style.background = LAB_ORB.hex;
+  node.textContent = LAB_ORB.emoji;
+  node.title = LAB_ORB.title;
 }
 
 function titleOrb(id: string, title: string): void {
@@ -33,17 +33,3 @@ titleOrb('orb-shift', 'TESERAS');
 titleOrb('orb-rush', 'BLOK');
 titleOrb('orb-kick', 'KICK');
 titleOrb('orb-sniper', 'MIRA');
-
-// Featured veggies stay on the LAB-only hero strip — not a studio-wide parade.
-const row = document.getElementById('canon-row');
-if (row) {
-  const featured = CREATURES.filter((c) => [1, 3, 5, 7, 11].includes(c.tier));
-  for (const c of featured) {
-    const dot = document.createElement('span');
-    dot.className = 'canon-dot';
-    dot.style.background = c.hex;
-    dot.textContent = c.emoji;
-    dot.title = `LAB ${c.code} ${c.name}`;
-    row.appendChild(dot);
-  }
-}

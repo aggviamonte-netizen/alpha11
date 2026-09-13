@@ -100,14 +100,19 @@ export function drawShiftArt(scene: Phaser.Scene, tier: number, r: number): Phas
   const c = p.color;
   paintTile(g, r, c, () => {
     switch (p.kind) {
-      case 'dot':
-        g.fillStyle(darken(c, 0.25), 1);
-        g.fillCircle(r * 0.04, r * 0.06, r * 0.58);
+      case 'dot': {
+        const s = r * 0.86;
+        g.fillStyle(darken(c, 0.28), 1);
+        g.fillRoundedRect(-s / 2 + 2, -s / 2 + 2, s, s, 4);
         g.fillStyle(c, 1);
-        g.fillCircle(0, 0, r * 0.56);
-        g.fillStyle(0xffffff, 0.45);
-        g.fillEllipse(-r * 0.16, -r * 0.16, r * 0.28, r * 0.16);
+        g.fillRoundedRect(-s / 2, -s / 2, s, s, 4);
+        g.fillStyle(0x0b0b0c, 0.28);
+        g.fillRect(-s * 0.12, -s * 0.32, s * 0.24, s * 0.64);
+        g.fillRect(-s * 0.32, -s * 0.12, s * 0.64, s * 0.24);
+        g.fillStyle(0xffffff, 0.35);
+        g.fillRect(-s / 2 + 4, -s / 2 + 4, s * 0.28, 3);
         break;
+      }
       case 'tri':
         g.fillStyle(darken(c, 0.3), 1);
         poly(g, regular(3, r * 0.72).map((pt) => ({ x: pt.x + r * 0.04, y: pt.y + r * 0.06 })));

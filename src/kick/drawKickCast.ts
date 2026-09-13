@@ -8,6 +8,9 @@ const LIME = 0xe8ff47;
 const CYAN = 0x6ee7ff;
 const INK = 0x0b0b0c;
 const GLOVE = 0xff7a45;
+const KIT = 0x1e6b8a;
+const SHORTS = 0x1a2230;
+const SOCK = 0xf4f1ea;
 
 export type KickGloves = {
   left: Phaser.GameObjects.Container;
@@ -46,64 +49,70 @@ function head(
 ): void {
   const g = scene.add.graphics();
   g.fillStyle(INK, 0.28);
-  g.fillCircle(1.2, y + 2, 11.4);
+  g.fillCircle(1.2, y + 2, 10.6);
   g.fillStyle(SKIN, 1);
-  g.fillCircle(0, y, 11);
+  g.fillCircle(0, y, 10);
   g.fillStyle(hair, 1);
   if (keeper) {
-    g.fillEllipse(0, y - 8, 22, 10);
-    g.fillRoundedRect(-11, y - 14, 22, 10, 6);
+    g.fillRect(-10, y - 12, 20, 8);
+    g.fillRect(-8, y - 16, 16, 6);
   } else {
-    g.fillEllipse(0, y - 7, 20, 9);
-    g.fillRoundedRect(-10, y - 13, 20, 9, 5);
+    g.fillRect(-9, y - 11, 18, 7);
+    g.fillTriangle(-9, y - 11, 9, y - 11, 0, y - 17);
   }
   g.fillStyle(0x2a2118, 1);
-  g.fillCircle(-3.6, y - 0.4, 1.7);
-  g.fillCircle(3.6, y - 0.4, 1.7);
+  g.fillRect(-5.2, y - 1.4, 2.4, 2.4);
+  g.fillRect(2.8, y - 1.4, 2.4, 2.4);
   g.fillStyle(0xffffff, 0.85);
-  g.fillCircle(-3.1, y - 1, 0.55);
-  g.fillCircle(4.1, y - 1, 0.55);
-  g.lineStyle(1.6, 0xc45a4a, 1);
+  g.fillCircle(-3.2, y - 1.2, 0.5);
+  g.fillCircle(4, y - 1.2, 0.5);
+  g.lineStyle(1.5, 0xc45a4a, 1);
   g.beginPath();
-  g.arc(0, y + 3.2, 3.6, 0.2, Math.PI - 0.2);
+  g.arc(0, y + 2.8, 3.2, 0.2, Math.PI - 0.2);
   g.strokePath();
-  g.fillStyle(0xffffff, 0.32);
-  g.fillEllipse(-4, y - 3, 6, 3);
   parent.add(g);
 }
 
-/** Striker in an original ALPHA-11 kit — not a licensed club or produce. */
+/** Striker in an original ALPHA-11 kit — human footballer, never produce. */
 export function drawKicker(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Container {
   const root = scene.add.container(x, y).setDepth(20);
   const g = scene.add.graphics();
 
   g.fillStyle(INK, 0.3);
-  g.fillEllipse(2, 22, 18, 7);
+  g.fillEllipse(2, 24, 18, 6);
 
-  const shorts = 0x1a2230;
-  g.fillStyle(shorts, 1);
-  g.fillRoundedRect(-11, 4, 22, 12, 4);
+  // Plant + kicking legs (cleats, socks) — a person, not a blob
+  g.fillStyle(SHORTS, 1);
+  g.fillRoundedRect(-12, 2, 24, 11, 3);
   g.fillStyle(LIME, 1);
-  g.fillRect(-11, 4, 22, 2);
+  g.fillRect(-12, 2, 24, 2);
 
-  g.fillStyle(0x243044, 1);
-  g.fillRoundedRect(-12, -8, 10, 14, 4);
-  g.fillRoundedRect(2, -4, 10, 16, 4);
+  g.fillStyle(SOCK, 1);
+  g.fillRect(-13, 12, 8, 8);
+  g.fillRect(6, 14, 8, 6);
+  g.fillStyle(KIT, 1);
+  g.fillRect(-13, 12, 8, 2);
+  g.fillRect(6, 14, 8, 2);
+
   g.fillStyle(BOOT, 1);
-  g.fillRoundedRect(-16, 4, 14, 8, 3);
-  g.fillRoundedRect(6, 8, 14, 8, 3);
-  g.fillStyle(LIME, 0.85);
-  g.fillRect(-14, 8, 8, 2);
-  g.fillRect(8, 12, 8, 2);
+  g.fillRoundedRect(-18, 18, 16, 7, 2);
+  g.fillRoundedRect(6, 18, 16, 7, 2);
+  g.fillStyle(LIME, 0.9);
+  g.fillRect(-16, 21, 8, 2);
+  g.fillRect(8, 21, 8, 2);
 
-  g.fillStyle(0x1e6b8a, 1);
-  g.fillRoundedRect(-13, -18, 26, 20, 7);
+  // Jersey torso + visible neck
+  g.fillStyle(SKIN, 1);
+  g.fillRect(-4, -20, 8, 5);
+  g.fillStyle(KIT, 1);
+  g.fillRoundedRect(-13, -16, 26, 20, 5);
   g.fillStyle(CYAN, 1);
-  g.fillRoundedRect(-13, -18, 26, 6, 6);
+  g.fillRect(-13, -16, 26, 5);
   g.fillStyle(LIME, 1);
-  g.fillRoundedRect(-5, -10, 10, 10, 3);
+  g.fillRect(-13, -2, 26, 2);
+  g.fillRoundedRect(-5, -10, 10, 9, 2);
   g.fillStyle(INK, 1);
-  g.fillRoundedRect(-3.5, -8.5, 7, 7, 2);
+  g.fillRoundedRect(-3.5, -8.5, 7, 6, 2);
 
   const num = scene.add
     .text(0, -5, '11', {
@@ -115,11 +124,11 @@ export function drawKicker(scene: Phaser.Scene, x: number, y: number): Phaser.Ga
     .setOrigin(0.5);
 
   g.fillStyle(CYAN, 1);
-  g.fillRoundedRect(-20, -14, 8, 8, 3);
-  g.fillRoundedRect(12, -12, 8, 10, 3);
+  g.fillRoundedRect(-20, -12, 8, 10, 3);
+  g.fillRoundedRect(12, -10, 8, 12, 3);
   g.fillStyle(SKIN, 1);
-  g.fillCircle(-20, -8, 4.4);
-  g.fillCircle(20, -4, 4.4);
+  g.fillCircle(-20, -4, 4.2);
+  g.fillCircle(20, 0, 4.2);
 
   root.add(g);
   head(scene, root, -26, HAIR_K, false);
@@ -137,26 +146,31 @@ export function drawKeeper(
   const g = scene.add.graphics();
 
   g.fillStyle(INK, 0.28);
-  g.fillEllipse(1, 20, 20, 7);
+  g.fillEllipse(1, 22, 20, 6);
 
   g.fillStyle(0x243044, 1);
-  g.fillRoundedRect(-13, 2, 10, 16, 4);
-  g.fillRoundedRect(3, 2, 10, 16, 4);
+  g.fillRect(-14, 4, 9, 14);
+  g.fillRect(5, 4, 9, 14);
+  g.fillStyle(SOCK, 1);
+  g.fillRect(-14, 16, 9, 4);
+  g.fillRect(5, 16, 9, 4);
   g.fillStyle(0x3a2a1c, 1);
-  g.fillRoundedRect(-15, 16, 13, 7, 3);
-  g.fillRoundedRect(2, 16, 13, 7, 3);
+  g.fillRoundedRect(-16, 18, 13, 6, 2);
+  g.fillRoundedRect(3, 18, 13, 6, 2);
 
   g.fillStyle(0x1a2238, 1);
-  g.fillRoundedRect(-12, 2, 24, 12, 4);
+  g.fillRoundedRect(-13, 2, 26, 11, 3);
   g.fillStyle(0x8b9bff, 1);
-  g.fillRect(-12, 2, 24, 2);
+  g.fillRect(-13, 2, 26, 2);
 
+  g.fillStyle(SKIN, 1);
+  g.fillRect(-4, -20, 8, 4);
   g.fillStyle(0x2a2048, 1);
-  g.fillRoundedRect(-15, -18, 30, 22, 8);
+  g.fillRoundedRect(-15, -17, 30, 21, 6);
   g.fillStyle(0x8b9bff, 1);
-  g.fillRoundedRect(-15, -18, 30, 7, 7);
+  g.fillRect(-15, -17, 30, 6);
   g.fillStyle(LIME, 1);
-  g.fillRoundedRect(-7, -8, 14, 8, 3);
+  g.fillRoundedRect(-7, -8, 14, 8, 2);
   g.fillStyle(INK, 1);
   g.fillRoundedRect(-5, -6, 10, 5, 2);
 
@@ -177,13 +191,13 @@ export function drawKeeper(
     const glove = scene.add.container(side * 20, -4);
     const pad = scene.add.graphics();
     pad.fillStyle(INK, 0.28);
-    pad.fillEllipse(1, 2, 16, 18);
+    pad.fillRoundedRect(-8, -8, 16, 18, 5);
     pad.fillStyle(GLOVE, 1);
-    pad.fillEllipse(0, 0, 16, 18);
+    pad.fillRoundedRect(-8, -9, 16, 18, 5);
     pad.fillStyle(LIME, 0.4);
-    pad.fillEllipse(0, -1, 10, 11);
+    pad.fillRoundedRect(-5, -6, 10, 10, 3);
     pad.fillStyle(0xffffff, 0.28);
-    pad.fillEllipse(-3, -4, 6, 4);
+    pad.fillRect(-5, -7, 5, 3);
     glove.add(pad);
     limb(scene, root, side * 16, -10, 7, 10, 0x8b9bff, 3);
     root.add(glove);

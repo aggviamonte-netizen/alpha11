@@ -1,22 +1,16 @@
 import Phaser from 'phaser';
 import { creature, radiusPx } from './canon';
-import { DANGER_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL, WELL_TOP } from './layout';
+import { paintLabBackdrop } from './labBackdrop';
+import { DANGER_Y, FLOOR_Y, INNER_L, INNER_R, WALL, WELL_TOP } from './layout';
 import { drawVeggieArt } from './veggies';
 
-export function paintLabBackdrop(scene: Phaser.Scene): void {
-  const g = scene.add.graphics().setDepth(0);
-  g.fillStyle(0x101014, 1);
-  g.fillRect(0, 0, W, H);
-  g.fillStyle(0x171820, 1);
-  g.fillRect(0, 0, W, 230);
-  g.fillStyle(0xe8ff47, 0.055);
-  g.fillCircle(52, 78, 110);
-  g.fillStyle(0x6ee7ff, 0.045);
-  g.fillCircle(W - 24, 168, 96);
-  g.fillStyle(0xff8bd1, 0.03);
-  g.fillCircle(W * 0.5, 760, 140);
-  g.fillStyle(0x050506, 0.22);
-  g.fillRect(0, 740, W, H - 740);
+export { paintLabBackdrop };
+
+function assertLabScene(scene: Phaser.Scene, fn: string): void {
+  const key = scene.scene.key;
+  if (key !== 'lab') {
+    throw new Error(`${fn} is LAB-only (scene "${key}")`);
+  }
 }
 
 export function paintArena(scene: Phaser.Scene): void {
@@ -68,6 +62,7 @@ export function drawCreature(
   tier: number,
   radius = radiusPx(tier),
 ): Phaser.GameObjects.Container {
+  assertLabScene(scene, 'drawCreature');
   const c = creature(tier);
   const r = radius;
   const root = scene.add.container(x, y);

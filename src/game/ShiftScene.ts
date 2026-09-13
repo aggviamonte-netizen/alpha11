@@ -4,7 +4,7 @@ import { burstDots, floatLabel, screenWash } from './juice';
 import { sfxMerge, sfxOver, sfxSlide, sfxWin, unlockSfx } from './sfx';
 import { drawShiftPiece, shiftPiece } from './shiftPieces';
 import { loadShiftBest, resetShiftScore, saveShiftScore, shiftMergePoints } from './shiftScore';
-import { paintLabBackdrop } from './sprites';
+import { paintLabBackdrop } from './labBackdrop';
 
 export const W = 390;
 export const H = 844;

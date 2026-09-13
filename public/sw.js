@@ -1,4 +1,4 @@
-const CACHE = 'alpha11-v8';
+const CACHE = 'alpha11-v9';
 const SHELL = [
   '/',
   '/lab/',
@@ -33,9 +33,34 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+function isShellRequest(req) {
+  const dest = req.destination;
+  if (dest === 'document' || dest === 'script' || dest === 'style') return true;
+  try {
+    const path = new URL(req.url).pathname;
+    return path === '/' || path.endsWith('/') || path.endsWith('.html') || path.endsWith('.js') || path.endsWith('.css');
+  } catch {
+    return false;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  if (isShellRequest(req)) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((hit) => hit || caches.match('/'))),
+    );
+    return;
+  }
   event.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;
