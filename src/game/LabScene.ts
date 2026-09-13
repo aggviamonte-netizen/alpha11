@@ -1,16 +1,12 @@
 import Phaser from 'phaser';
 import { creature, radiusPx, rollDropTier } from './canon';
+import { DANGER_Y, DROP_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL } from './layout';
 import { loadBest, mergePoints, popPoints, resetScore, saveScore } from './score';
+import { sfxDrop, sfxMerge, sfxOver, sfxPop, unlockSfx } from './sfx';
+import { drawCreature, paintArena } from './sprites';
 
-export const W = 390;
-export const H = 844;
+export { H, W };
 
-const WALL = 16;
-const INNER_L = 26;
-const INNER_R = W - 26;
-const FLOOR_Y = 668;
-const DROP_Y = 188;
-const DANGER_Y = 236;
 const MERGE_MS = 200;
 const DANGER_MS = 1500;
 const COMBO_MS = 1000;
@@ -27,6 +23,7 @@ type Piece = {
   overSince: number | null;
   cleared: boolean;
   locked: boolean;
+  lastSquash: number;
 };
 
 type Contact = { a: number; b: number; t: number };
@@ -57,6 +54,11 @@ export class LabScene extends Phaser.Scene {
   private pieces: Piece[] = [];
   private contacts = new Map<string, Contact>();
   private startAt = 0;
+  private byBody = new WeakMap<MatterJS.BodyType, Piece>();
+  private floorBody: MatterJS.BodyType | null = null;
+  private guide!: Phaser.GameObjects.Graphics;
+  private danger!: Phaser.GameObjects.Graphics;
+  private hintShown = false;
 
   constructor() {
     super('lab');
@@ -71,11 +73,17 @@ export class LabScene extends Phaser.Scene {
     this.preview = null;
     this.pieces = [];
     this.contacts.clear();
+    this.byBody = new WeakMap();
     this.nextTier = rollDropTier();
     this.paintStatic();
     this.matter.world.setGravity(0, 1.55);
 
+    this.matter.world.on('collisionstart', (event: { pairs: Array<{ bodyA: MatterJS.BodyType; bodyB: MatterJS.BodyType }> }) => {
+      this.onCollide(event);
+    });
+
     this.input.on('pointerdown', () => {
+      unlockSfx();
       if (this.phase === 'play') this.drop();
     });
 
@@ -101,11 +109,13 @@ export class LabScene extends Phaser.Scene {
       const x = Phaser.Math.Clamp(this.input.activePointer.x, INNER_L + r, INNER_R - r);
       this.preview.x = x;
       this.preview.root.setPosition(x, DROP_Y);
+      this.drawGuide(x, r);
+    } else {
+      this.guide.clear();
     }
 
     for (const p of this.pieces) {
       p.root.setPosition(p.body.position.x, p.body.position.y);
-      p.root.setRotation(p.body.angle);
     }
 
     if (this.phase !== 'play') return;
@@ -116,6 +126,7 @@ export class LabScene extends Phaser.Scene {
 
   private beginPlay(): void {
     if (this.phase === 'play') return;
+    unlockSfx();
     el('overlay-start').hidden = true;
     el('overlay-start').onclick = null;
     this.phase = 'play';
@@ -125,30 +136,20 @@ export class LabScene extends Phaser.Scene {
     this.syncHud();
     this.startAt = this.time.now;
     this.makePreview();
+    this.showDropHint();
     this.time.delayedCall(220, () => {
       if (this.phase === 'play') this.canDrop = true;
     });
   }
 
   private paintStatic(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x0b0b0c, 1);
-    g.fillRect(0, 0, W, H);
-    g.fillStyle(0x101012, 1);
-    g.fillRect(INNER_L, DROP_Y - 24, INNER_R - INNER_L, FLOOR_Y - (DROP_Y - 24));
-    g.fillStyle(0xf4f1ea, 0.14);
-    g.fillRect(INNER_L - WALL, DROP_Y - 28, WALL, FLOOR_Y - (DROP_Y - 28) + WALL);
-    g.fillRect(INNER_R, DROP_Y - 28, WALL, FLOOR_Y - (DROP_Y - 28) + WALL);
-    g.fillRect(INNER_L - WALL, FLOOR_Y, INNER_R - INNER_L + WALL * 2, WALL);
-    g.lineStyle(1, 0xe8ff47, 0.5);
-    for (let x = INNER_L; x < INNER_R; x += 10) {
-      g.beginPath();
-      g.moveTo(x, DANGER_Y);
-      g.lineTo(Math.min(x + 6, INNER_R), DANGER_Y);
-      g.strokePath();
-    }
+    paintArena(this);
 
-    this.matter.add.rectangle(W / 2, FLOOR_Y + WALL / 2, W, WALL, {
+    this.guide = this.add.graphics().setDepth(2);
+    this.danger = this.add.graphics().setDepth(3);
+    this.drawDanger(0.55);
+
+    this.floorBody = this.matter.add.rectangle(W / 2, FLOOR_Y + WALL / 2, W, WALL, {
       isStatic: true,
       friction: 0.85,
     });
@@ -156,19 +157,64 @@ export class LabScene extends Phaser.Scene {
     this.matter.add.rectangle(INNER_R + WALL / 2, H / 2, WALL, H, { isStatic: true });
   }
 
+  private drawDanger(alpha: number): void {
+    this.danger.clear();
+    const w = INNER_R - INNER_L;
+    this.danger.fillStyle(0xff3b4a, 0.07 * alpha);
+    this.danger.fillRect(INNER_L, DANGER_Y - 10, w, 20);
+    this.danger.lineStyle(2, 0xff3b4a, alpha);
+    for (let x = INNER_L; x < INNER_R; x += 11) {
+      this.danger.beginPath();
+      this.danger.moveTo(x, DANGER_Y);
+      this.danger.lineTo(Math.min(x + 7, INNER_R), DANGER_Y);
+      this.danger.strokePath();
+    }
+    this.danger.lineStyle(1, 0xff8a94, alpha * 0.45);
+    this.danger.beginPath();
+    this.danger.moveTo(INNER_L, DANGER_Y);
+    this.danger.lineTo(INNER_R, DANGER_Y);
+    this.danger.strokePath();
+  }
+
+  private drawGuide(x: number, r: number): void {
+    this.guide.clear();
+    this.guide.lineStyle(1.5, 0xe8ff47, 0.18);
+    const top = DROP_Y + r + 6;
+    for (let y = top; y < FLOOR_Y - 6; y += 10) {
+      this.guide.beginPath();
+      this.guide.moveTo(x, y);
+      this.guide.lineTo(x, Math.min(y + 5, FLOOR_Y - 6));
+      this.guide.strokePath();
+    }
+    this.guide.lineStyle(1, 0xe8ff47, 0.28);
+    this.guide.strokeCircle(x, FLOOR_Y - 3, 3);
+  }
+
   private makePreview(): void {
     this.destroyPreview();
     const tier = this.nextTier;
     this.nextTier = rollDropTier();
-    const root = this.drawCreature(0, 0, tier, 0.72);
+    const root = drawCreature(this, 0, 0, tier);
+    root.setAlpha(0.9);
+    root.setScale(0.74);
     const r = radiusPx(tier);
     const x = Phaser.Math.Clamp(this.input.activePointer.x || W / 2, INNER_L + r, INNER_R - r);
     root.setPosition(x, DROP_Y);
+    this.tweens.add({
+      targets: root,
+      scaleX: 0.8,
+      scaleY: 0.8,
+      yoyo: true,
+      repeat: -1,
+      duration: 720,
+      ease: 'Sine.inOut',
+    });
     this.preview = { tier, root, x };
     this.syncHud();
   }
 
   private destroyPreview(): void {
+    if (this.preview) this.tweens.killTweensOf(this.preview.root);
     this.preview?.root.destroy(true);
     this.preview = null;
   }
@@ -178,7 +224,9 @@ export class LabScene extends Phaser.Scene {
     if (this.time.now - this.startAt < 200) return;
     const { tier, x } = this.preview;
     this.destroyPreview();
-    this.spawn(tier, x, DROP_Y);
+    this.spawn(tier, x, DROP_Y, false);
+    sfxDrop();
+    this.hideDropHint();
     this.canDrop = false;
     this.time.delayedCall(DROP_CD, () => {
       if (this.phase !== 'play') return;
@@ -187,7 +235,7 @@ export class LabScene extends Phaser.Scene {
     });
   }
 
-  private spawn(tier: number, x: number, y: number): Piece {
+  private spawn(tier: number, x: number, y: number, popIn: boolean): Piece {
     const radius = radiusPx(tier);
     const body = this.matter.add.circle(x, y, radius, {
       restitution: 0.14,
@@ -195,7 +243,17 @@ export class LabScene extends Phaser.Scene {
       frictionAir: 0.012,
       label: `a${tier}`,
     });
-    const root = this.drawCreature(x, y, tier, 1);
+    const root = drawCreature(this, x, y, tier);
+    if (popIn) {
+      root.setScale(0.38);
+      this.tweens.add({
+        targets: root,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 240,
+        ease: 'Back.out',
+      });
+    }
     const piece: Piece = {
       id: nextPieceId++,
       tier,
@@ -205,34 +263,42 @@ export class LabScene extends Phaser.Scene {
       overSince: null,
       cleared: false,
       locked: false,
+      lastSquash: 0,
     };
     this.pieces.push(piece);
+    this.byBody.set(body, piece);
     return piece;
   }
 
-  private drawCreature(x: number, y: number, tier: number, alpha: number): Phaser.GameObjects.Container {
-    const c = creature(tier);
-    const r = radiusPx(tier);
-    const root = this.add.container(x, y);
-    const disc = this.add.circle(0, 0, r, c.color, alpha);
-    disc.setStrokeStyle(Math.max(2, r * 0.06), 0x0b0b0c, 0.45);
-    const emoji = this.add
-      .text(0, -r * 0.08, c.emoji, {
-        fontSize: `${Math.max(14, r * 0.92)}px`,
-        align: 'center',
-      })
-      .setOrigin(0.5);
-    const code = this.add
-      .text(0, r * 0.42, c.code, {
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-        fontSize: `${Math.max(8, r * 0.3)}px`,
-        color: '#0B0B0C',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
-    root.add([disc, emoji, code]);
-    root.setDepth(10);
-    return root;
+  private onCollide(event: { pairs: Array<{ bodyA: MatterJS.BodyType; bodyB: MatterJS.BodyType }> }): void {
+    if (this.phase !== 'play') return;
+    const now = this.time.now;
+    for (const pair of event.pairs) {
+      const pa = this.byBody.get(pair.bodyA);
+      const pb = this.byBody.get(pair.bodyB);
+      if (pa && pb) {
+        this.squash(pa, 1.16, 0.82, now);
+        this.squash(pb, 1.16, 0.82, now);
+      } else if (pa && pair.bodyB === this.floorBody) {
+        this.squash(pa, 1.12, 0.84, now);
+      } else if (pb && pair.bodyA === this.floorBody) {
+        this.squash(pb, 1.12, 0.84, now);
+      }
+    }
+  }
+
+  private squash(p: Piece, sx: number, sy: number, now: number): void {
+    if (p.locked || now - p.lastSquash < 90) return;
+    p.lastSquash = now;
+    this.tweens.killTweensOf(p.root);
+    p.root.setScale(sx, sy);
+    this.tweens.add({
+      targets: p.root,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 150,
+      ease: 'Sine.out',
+    });
   }
 
   private tickMerges(now: number): void {
@@ -275,20 +341,25 @@ export class LabScene extends Phaser.Scene {
     const my = (a.body.position.y + b.body.position.y) / 2;
     const combo = this.lastMerge > 0 && this.time.now - this.lastMerge < COMBO_MS;
     this.lastMerge = this.time.now;
-    const next = a.tier + 1;
+    const tint = creature(a.tier).color;
     this.kill(a);
     this.kill(b);
 
     if (a.tier >= 11) {
       const pts = popPoints(combo);
       this.addScore(pts, mx, my, combo, true);
-      this.burst(mx, my, 0xf4f1ea);
+      this.burst(mx, my, 0xf4f1ea, 14);
+      this.cameras.main.shake(90, 0.006);
+      sfxPop();
       return;
     }
 
-    const pts = mergePoints(next, combo);
+    const pts = mergePoints(a.tier + 1, combo);
     this.addScore(pts, mx, my, combo, false);
-    const born = this.spawn(next, mx, my);
+    this.burst(mx, my, tint, combo ? 12 : 9);
+    this.cameras.main.shake(combo ? 70 : 46, combo ? 0.0045 : 0.003);
+    sfxMerge(combo);
+    const born = this.spawn(a.tier + 1, mx, my, true);
     this.matter.body.setVelocity(born.body, { x: 0, y: -1.4 });
   }
 
@@ -296,6 +367,7 @@ export class LabScene extends Phaser.Scene {
     this.contacts.forEach((c, key) => {
       if (c.a === p.id || c.b === p.id) this.contacts.delete(key);
     });
+    this.tweens.killTweensOf(p.root);
     this.matter.world.remove(p.body);
     p.root.destroy(true);
     this.pieces = this.pieces.filter((x) => x.id !== p.id);
@@ -309,38 +381,57 @@ export class LabScene extends Phaser.Scene {
     const label = pop ? `+${pts} POP` : combo ? `+${pts} COMBO` : `+${pts}`;
     const t = this.add
       .text(x, y, label, {
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-        fontSize: '15px',
-        color: '#E8FF47',
+        fontFamily: 'Outfit, ui-sans-serif, system-ui, sans-serif',
+        fontSize: pop ? '20px' : combo ? '18px' : '16px',
+        color: pop ? '#F4F1EA' : '#E8FF47',
         fontStyle: 'bold',
+        stroke: '#0B0B0C',
+        strokeThickness: 5,
       })
       .setOrigin(0.5)
-      .setDepth(20);
+      .setDepth(20)
+      .setScale(0.7);
     this.tweens.add({
       targets: t,
-      y: y - 36,
+      y: y - 42,
       alpha: 0,
-      duration: 620,
+      scale: 1.08,
+      duration: 680,
+      ease: 'Quad.out',
       onComplete: () => t.destroy(),
     });
   }
 
-  private burst(x: number, y: number, color: number): void {
-    const g = this.add.graphics().setDepth(19);
-    g.fillStyle(color, 0.85);
-    for (let i = 0; i < 8; i++) {
-      const a = (Math.PI * 2 * i) / 8;
-      g.fillCircle(x + Math.cos(a) * 18, y + Math.sin(a) * 18, 4);
-    }
+  private burst(x: number, y: number, color: number, count: number): void {
+    const ring = this.add.circle(x, y, 10, color, 0).setStrokeStyle(2, color, 0.85).setDepth(18);
     this.tweens.add({
-      targets: g,
+      targets: ring,
+      scale: 2.3,
       alpha: 0,
-      duration: 420,
-      onComplete: () => g.destroy(),
+      duration: 320,
+      ease: 'Quad.out',
+      onComplete: () => ring.destroy(),
     });
+    const n = Math.min(count, 14);
+    for (let i = 0; i < n; i++) {
+      const a = (Math.PI * 2 * i) / n + Math.random() * 0.28;
+      const dist = 18 + Math.random() * 26;
+      const dot = this.add.circle(x, y, 2.2 + Math.random() * 2.4, color, 0.95).setDepth(19);
+      this.tweens.add({
+        targets: dot,
+        x: x + Math.cos(a) * dist,
+        y: y + Math.sin(a) * dist,
+        alpha: 0,
+        scale: 0.15,
+        duration: 360 + Math.random() * 160,
+        ease: 'Quad.out',
+        onComplete: () => dot.destroy(),
+      });
+    }
   }
 
   private tickDanger(now: number): void {
+    let hot = false;
     for (const p of this.pieces) {
       if (p.locked) continue;
       const top = p.body.position.y - p.radius;
@@ -358,10 +449,13 @@ export class LabScene extends Phaser.Scene {
           this.gameOver();
           return;
         }
+        hot = true;
       } else {
         p.overSince = null;
       }
     }
+    const pulse = hot ? 0.55 + Math.sin(now / 90) * 0.4 : 0.5;
+    this.drawDanger(pulse);
   }
 
   private gameOver(): void {
@@ -369,18 +463,37 @@ export class LabScene extends Phaser.Scene {
     this.phase = 'over';
     this.canDrop = false;
     this.destroyPreview();
+    this.guide.clear();
+    this.drawDanger(0.95);
     this.matter.world.pause();
     saveScore(this.score);
     this.best = loadBest();
     this.syncHud();
     el('over-score').textContent = `Puntos ${this.score} · Mejor ${this.best}`;
     el('overlay-over').hidden = false;
+    sfxOver();
   }
 
   private syncHud(): void {
     el('score').textContent = String(this.score);
     el('best').textContent = String(this.best);
-    const next = creature(this.phase === 'play' ? this.nextTier : this.nextTier);
-    el('next').textContent = `Sigue ${next.emoji} ${next.code}`;
+    const next = creature(this.nextTier);
+    const chip = el<HTMLElement>('next-chip');
+    chip.style.background = next.hex;
+    chip.textContent = next.emoji;
+    el('next-code').textContent = next.code;
+  }
+
+  private showDropHint(): void {
+    if (this.hintShown) return;
+    const hint = document.getElementById('drop-hint');
+    if (!hint) return;
+    hint.hidden = false;
+    this.hintShown = true;
+  }
+
+  private hideDropHint(): void {
+    const hint = document.getElementById('drop-hint');
+    if (hint) hint.hidden = true;
   }
 }
