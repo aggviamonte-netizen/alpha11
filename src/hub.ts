@@ -1,7 +1,10 @@
 import { creature, CREATURES } from './game/canon';
-import { registerPwa } from './pwa';
+import { bootStudio } from './studio';
 
-registerPwa();
+// Inventory placeholders live in HTML: [data-ad-slot].
+// TODO(ads-backend): hydrate hub-native-1 / hub-native-2 without shipping ad scripts from this file.
+
+bootStudio();
 
 function paintOrb(id: string, tier: number): void {
   const node = document.getElementById(id);

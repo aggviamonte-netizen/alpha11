@@ -5,136 +5,292 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0B0B0C" />
     <meta name="google" content="notranslate" />
-    <meta name="description" content="ALPHA-11 — hub, LAB, JUMP, SHIFT, RUSH, KICK, SNIPER y Vintage" />
+    <meta
+      name="description"
+      content="ALPHA-11 LAB — laboratorio de juegos casuales para móvil. Originales y Vintage. Gratis, PWA, sin cuenta."
+    />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ALPHA-11" />
-    <title>ALPHA-11</title>
+    <title>ALPHA-11 LAB — arcade casual</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="stylesheet" href="/src/hub.css" />
   </head>
-  <body>
-    <main class="shell">
-      <h1 class="logo">ALPHA<span>-11</span></h1>
-      <p class="tagline">laboratorio casual</p>
-      <section class="games">
-        <!-- Growing column — not a fixed 4-card grid. Append after RUSH. -->
-        <!-- hub-slot:kick — other PR: <a class="game-card" data-game="kick" href="/kick/"> -->
-        <!-- hub-slot:sniper — other PR: <a class="game-card" data-game="sniper" href="/sniper/"> -->
-        <a class="game-card" data-game="lab" href="/lab/">
-          <span class="game-orb" id="orb-lab" aria-hidden="true"></span>
-          <span class="game-meta">
-            <strong>LAB</strong>
-            <em>merge</em>
+  <body class="studio">
+    <div class="studio-bg" aria-hidden="true">
+      <div class="studio-spot"></div>
+      <div class="studio-rings"></div>
+    </div>
+
+    <a class="skip" href="#arcade">Ir al arcade</a>
+
+    <header class="studio-nav">
+      <div class="studio-wrap studio-nav-inner">
+        <a class="studio-brand" href="/" aria-current="page">ALPHA<span>-11</span></a>
+        <nav class="studio-links" aria-label="Principal">
+          <a href="#arcade">Arcade</a>
+          <a href="#estudio">Estudio</a>
+          <a href="/partners/">Partners</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero studio-wrap">
+        <div class="hero-copy">
+          <p class="kicker">ALPHA-11 LAB · casual móvil · ES</p>
+          <h1>El arcade del <em>laboratorio</em>.</h1>
+          <p class="lede">
+            Un arcade de mesas cortas: originales del lab y lecturas vintage, mismo canon. Gratis,
+            instalable, sin cuenta. El sitio está en español porque así juega la gente a la que le
+            hablamos.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-lime" href="#arcade">Entrar al arcade</a>
+            <a class="btn btn-ghost" href="/partners/">Soy anunciante</a>
+          </div>
+        </div>
+        <aside class="hero-stage" aria-label="Canon ALPHA-11">
+          <div class="hero-glass">
+            <p class="hero-stage-kicker">Canon A1–A11</p>
+            <p class="hero-stage-title">Misma familia en cada mesa.</p>
+            <div class="canon-row" id="canon-row"></div>
+            <p class="hero-stage-note">Spore, Glim, Pulse, Vault, Alpha. El resto vive dentro de los juegos.</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="trust studio-wrap reveal" aria-label="Cómo se juega">
+        <article class="trust-card">
+          <strong>Gratis</strong>
+          <span>Sin muro, sin IAP, sin “mira este vídeo”.</span>
+        </article>
+        <article class="trust-card">
+          <strong>PWA</strong>
+          <span>Añade a inicio de pantalla. Se siente app.</span>
+        </article>
+        <article class="trust-card">
+          <strong>Sin cuenta</strong>
+          <span>Abres y juegas. El récord se queda en el móvil.</span>
+        </article>
+      </section>
+
+      <aside class="studio-wrap">
+        <!-- TODO(ads-backend): replace this inert native unit. Frontend must not load ads.js / AdSense. -->
+        <a class="partner-slot reveal" data-ad-slot="hub-native-1" data-ad-format="native" href="/partners/">
+          <span class="partner-slot-meta">
+            <span>Espacio partner</span>
+            <span>Hub · nativo · placeholder</span>
           </span>
-          <span class="game-go">JUGAR</span>
+          <span class="partner-slot-copy">
+            <strong>Tu marca, en el mismo cristal que el arcade.</strong>
+            <em>No hay red de anuncios activa. Esto es el hueco que se vende — limpio, quieto, con nombre.</em>
+          </span>
+          <span class="partner-slot-cta">Reservar</span>
         </a>
-        <a class="game-card" data-game="jump" href="/jump/">
-          <span class="game-orb" id="orb-jump" aria-hidden="true"></span>
-          <span class="game-meta">
-            <strong>JUMP</strong>
-            <em>flap</em>
+      </aside>
+
+      <section class="arcade studio-wrap" id="arcade">
+        <header class="section-head reveal">
+          <p class="kicker">Arcade</p>
+          <h2>Elige mesa.</h2>
+          <p class="section-lead">Originales del lab y lecturas vintage del casual clásico, todas con la piel ALPHA-11.</p>
+        </header>
+
+        <div class="lane reveal">
+          <div class="lane-head">
+            <h3>Originales</h3>
+            <p>IP propia. Columna que crece.</p>
+          </div>
+          <div class="games">
+            <!-- Growing column — append originales here. -->
+            <a class="game-card" data-game="lab" href="/lab/">
+              <span class="game-orb" id="orb-lab" aria-hidden="true"></span>
+              <span class="game-meta">
+                <strong>LAB</strong>
+                <em>merge</em>
+                <span class="game-pitch">Once criaturas. Una copa. Fusionas iguales y subes de tier.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="jump" href="/jump/">
+              <span class="game-orb" id="orb-jump" aria-hidden="true"></span>
+              <span class="game-meta">
+                <strong>JUMP</strong>
+                <em>flap</em>
+                <span class="game-pitch">Un toque. A5 Pulse entre vidrio y haces del lab.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="shift" href="/shift/">
+              <span class="game-orb" id="orb-shift" aria-hidden="true"></span>
+              <span class="game-meta">
+                <strong>SHIFT</strong>
+                <em>2048</em>
+                <span class="game-pitch">Desliza el tablero 4×4. El canon sube de A1 hacia arriba.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="rush" href="/rush/">
+              <span class="game-orb blok-orb" id="orb-rush" aria-hidden="true"></span>
+              <span class="game-meta">
+                <strong>RUSH</strong>
+                <em>velocidad</em>
+                <span class="game-pitch">BLOK corre el lab. Plataforma corta, un toque.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="kick" href="/kick/">
+              <span class="game-orb" id="orb-kick" aria-hidden="true"></span>
+              <span class="game-meta">
+                <strong>KICK</strong>
+                <em>penalti</em>
+                <span class="game-pitch">A8 Forge. Un disparo, una portería, sin cuenta.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="sniper" href="/sniper/">
+              <span class="game-orb" id="orb-sniper" aria-hidden="true"></span>
+              <span class="game-meta">
+                <strong>SNIPER</strong>
+                <em>mira</em>
+                <span class="game-pitch">A6 Coil. Un segundo para apuntar, otro para soltar.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="lane reveal" id="vintage">
+          <div class="lane-head">
+            <h3>Vintage</h3>
+            <p>Copias MIT curadas. Créditos al final.</p>
+          </div>
+          <div class="games">
+            <a class="game-card" data-game="stack" href="/vintage/stack/">
+              <span class="game-orb" aria-hidden="true">▣</span>
+              <span class="game-meta">
+                <strong>STACK</strong>
+                <em>bloques</em>
+                <span class="game-pitch">Apila y gira. El clásico de bloques en el lab.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="sudoku" href="/vintage/sudoku/">
+              <span class="game-orb" aria-hidden="true">#</span>
+              <span class="game-meta">
+                <strong>SUDOKU</strong>
+                <em>números</em>
+                <span class="game-pitch">9×9. Sin cuenta, en el bolsillo.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="space" href="/vintage/space/">
+              <span class="game-orb" aria-hidden="true">▲</span>
+              <span class="game-meta">
+                <strong>SPACE</strong>
+                <em>disparos</em>
+                <span class="game-pitch">Nave, oleadas, el arcade de siempre.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="fight" href="/vintage/fight/">
+              <span class="game-orb" aria-hidden="true">†</span>
+              <span class="game-meta">
+                <strong>FIGHT</strong>
+                <em>palitos</em>
+                <span class="game-pitch">Pelea de palitos. Un round corto.</span>
+              </span>
+              <span class="game-go">JUGAR</span>
+            </a>
+            <a class="game-card" data-game="arcade" href="/arcade/">
+              <span class="game-orb" aria-hidden="true">◆</span>
+              <span class="game-meta">
+                <strong>ARCADE</strong>
+                <em>pack curado</em>
+                <span class="game-pitch">LittleJS: snake, bricks, lander y más.</span>
+              </span>
+              <span class="game-go">ABRIR</span>
+            </a>
+          </div>
+          <p class="vintage-credits"><a href="/vintage/credits/">créditos vintage</a></p>
+        </div>
+
+        <!-- TODO(ads-backend): mid-arcade native. Keep placeholder until mediation exists. -->
+        <a class="partner-slot partner-slot--slim reveal" data-ad-slot="hub-native-2" data-ad-format="native" href="/partners/">
+          <span class="partner-slot-meta">
+            <span>Espacio partner</span>
+            <span>Arcade · nativo · placeholder</span>
           </span>
-          <span class="game-go">JUGAR</span>
-        </a>
-        <a class="game-card" data-game="shift" href="/shift/">
-          <span class="game-orb" id="orb-shift" aria-hidden="true"></span>
-          <span class="game-meta">
-            <strong>SHIFT</strong>
-            <em>2048</em>
+          <span class="partner-slot-copy">
+            <strong>Entre mesas, no encima del juego.</strong>
+            <em>Un hueco después del vintage. El backend de ads lo enchufa; el front no carga redes.</em>
           </span>
-          <span class="game-go">JUGAR</span>
-        </a>
-        <a class="game-card" data-game="rush" href="/rush/">
-          <span class="game-orb blok-orb" id="orb-rush" aria-hidden="true"></span>
-          <span class="game-meta">
-            <strong>RUSH</strong>
-            <em>velocidad</em>
-          </span>
-          <span class="game-go">JUGAR</span>
-        </a>
-        <a class="game-card" data-game="kick" href="/kick/">
-          <span class="game-orb" id="orb-kick" aria-hidden="true"></span>
-          <span class="game-meta">
-            <strong>KICK</strong>
-            <em>penalti</em>
-          </span>
-          <span class="game-go">JUGAR</span>
-        </a>
-        <a class="game-card" data-game="sniper" href="/sniper/">
-          <span class="game-orb" id="orb-sniper" aria-hidden="true"></span>
-          <span class="game-meta">
-            <strong>SNIPER</strong>
-            <em>mira</em>
-          </span>
-          <span class="game-go">JUGAR</span>
+          <span class="partner-slot-cta">Reservar</span>
         </a>
       </section>
-      <section class="vintage" id="vintage">
-        <p class="vintage-kicker">arcade clásico</p>
-        <h2 class="vintage-title">Vintage</h2>
-        <div class="vintage-group">
-          <h3>Puzzle</h3>
-          <a class="game-card" data-game="stack" href="/vintage/stack/">
-            <span class="game-orb" aria-hidden="true">▣</span>
-            <span class="game-meta">
-              <strong>STACK</strong>
-              <em>bloques</em>
-            </span>
-            <span class="game-go">JUGAR</span>
-          </a>
-          <a class="game-card" data-game="sudoku" href="/vintage/sudoku/">
-            <span class="game-orb" aria-hidden="true">#</span>
-            <span class="game-meta">
-              <strong>SUDOKU</strong>
-              <em>números</em>
-            </span>
-            <span class="game-go">JUGAR</span>
-          </a>
+
+      <section class="estudio studio-wrap" id="estudio">
+        <header class="section-head reveal">
+          <p class="kicker">Estudio</p>
+          <h2>Marca ALPHA-11 LAB.</h2>
+        </header>
+        <div class="estudio-grid">
+          <article class="glass-card reveal">
+            <h3>Qué es esto</h3>
+            <p>
+              Un laboratorio de casual móvil con un arcade público. No es un portal de clones ni un
+              pitch deck: se entra, se juega un minuto, a veces se instala. Mesas originales y
+              vintage. La misma familia de criaturas en casi todas; BLOK corre RUSH.
+            </p>
+          </article>
+          <article class="glass-card reveal">
+            <h3>A quién le hablamos</h3>
+            <p>
+              Casual de móvil, hispanohablante, sesiones cortas. Gente que abre el teléfono en un
+              descanso — no un ranking inventado, una intención de diseño.
+            </p>
+          </article>
+          <article class="glass-card reveal">
+            <h3>Qué se puede comprar</h3>
+            <p>
+              Hoy: un hueco nativo en el hub, del mismo material que las cartas. Después: piezas
+              dentro de las mesas (pausa, fin de partida). Todavía no hay mediación ni scripts de
+              redes. Si encajas, te escribimos.
+            </p>
+          </article>
         </div>
-        <div class="vintage-group">
-          <h3>Naves</h3>
-          <a class="game-card" data-game="space" href="/vintage/space/">
-            <span class="game-orb" aria-hidden="true">▲</span>
-            <span class="game-meta">
-              <strong>SPACE</strong>
-              <em>disparos</em>
-            </span>
-            <span class="game-go">JUGAR</span>
-          </a>
-        </div>
-        <div class="vintage-group">
-          <h3>Pelea</h3>
-          <a class="game-card" data-game="fight" href="/vintage/fight/">
-            <span class="game-orb" aria-hidden="true">†</span>
-            <span class="game-meta">
-              <strong>FIGHT</strong>
-              <em>palitos</em>
-            </span>
-            <span class="game-go">JUGAR</span>
-          </a>
-        </div>
-        <div class="vintage-group">
-          <h3>Arcade pack</h3>
-          <a class="game-card" data-game="arcade" href="/arcade/">
-            <span class="game-orb" aria-hidden="true">◆</span>
-            <span class="game-meta">
-              <strong>ARCADE</strong>
-              <em>pack curado</em>
-            </span>
-            <span class="game-go">ABRIR</span>
-          </a>
-        </div>
-        <a class="vintage-credits" href="/vintage/credits/">créditos vintage</a>
       </section>
-      <div class="canon-row" id="canon-row" aria-hidden="true"></div>
-      <p class="foot">Gratis · Añade a inicio de pantalla</p>
+
+      <section class="cta-band studio-wrap reveal">
+        <div class="cta-band-inner">
+          <div>
+            <p class="kicker">Partners</p>
+            <h2>Si tu marca encaja, habla con una persona.</h2>
+            <p>
+              Lista de espera. Sin decimales de CPM, sin “10 millones de usuarios”. Un correo, un
+              contexto, y te respondemos.
+            </p>
+          </div>
+          <a class="btn btn-lime" href="/partners/">Anunciantes</a>
+        </div>
+      </section>
     </main>
+
+    <footer class="studio-foot">
+      <div class="studio-wrap studio-foot-inner">
+        <p><strong>ALPHA-11 LAB</strong> · alpha11.app</p>
+        <p>Gratis · PWA · Sin cuenta</p>
+        <p><a href="/partners/">Partners / anunciantes</a></p>
+      </div>
+    </footer>
+
     <script type="module" src="/src/hub.ts"></script>
   </body>
 </html>

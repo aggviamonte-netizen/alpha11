@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0B0C" />
+    <meta name="google" content="notranslate" />
+    <meta
+      name="description"
+      content="ALPHA-11 LAB para anunciantes y marcas. Inventario nativo en el hub, piezas in-game más adelante. Lista de espera — te escribimos."
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ALPHA-11" />
+    <title>Partners — ALPHA-11 LAB</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="stylesheet" href="/src/hub.css" />
+  </head>
+  <body class="studio partners-page">
+    <div class="studio-bg" aria-hidden="true">
+      <div class="studio-spot"></div>
+      <div class="studio-rings"></div>
+    </div>
+
+    <a class="skip" href="#waitlist">Ir al formulario</a>
+
+    <header class="studio-nav">
+      <div class="studio-wrap studio-nav-inner">
+        <a class="studio-brand" href="/">ALPHA<span>-11</span></a>
+        <nav class="studio-links" aria-label="Principal">
+          <a href="/#arcade">Arcade</a>
+          <a href="/#estudio">Estudio</a>
+          <a href="/partners/" aria-current="page">Partners</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero hero--partners studio-wrap">
+        <div class="hero-copy">
+          <p class="kicker">Anunciantes · marcas · medios</p>
+          <h1>Un hueco que se puede <em>enseñar</em>.</h1>
+          <p class="lede">
+            ALPHA-11 LAB es un arcade casual en español. Si tu marca quiere estar donde la gente
+            juega un minuto —no en un banner ruidoso— este es el sitio para hablarlo. Sin cifras
+            inventadas. Con una persona al otro lado.
+          </p>
+        </div>
+      </section>
+
+      <section class="estudio studio-wrap">
+        <div class="estudio-grid">
+          <article class="glass-card reveal">
+            <h3>Audiencia</h3>
+            <p>
+              Casual móvil, hispanohablante, sesiones cortas. El hub y los juegos están diseñados
+              para 390×844 primero: el teléfono en la mano, no un desktop de agencia.
+            </p>
+          </article>
+          <article class="glass-card reveal">
+            <h3>Inventario hoy</h3>
+            <p>
+              Unidades nativas en el hub — el mismo cristal, el mismo tipo, un “Espacio partner”
+              que no finge ser contenido. Se ve vendible porque está cuidado, no porque grite.
+            </p>
+          </article>
+          <article class="glass-card reveal">
+            <h3>Inventario después</h3>
+            <p>
+              Piezas dentro de LAB, JUMP, SHIFT y RUSH: pausa y fin de partida. No hay AdSense ni
+              mediación enchufada. Si llegamos ahí, será con el mismo tono.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <aside class="studio-wrap">
+        <!-- TODO(ads-backend): preview unit only. Do not serve live creatives from this page. -->
+        <div class="partner-slot partner-slot--static reveal" data-ad-slot="hub-native-preview" data-ad-format="native">
+          <span class="partner-slot-meta">
+            <span>Espacio partner</span>
+            <span>Ejemplo de unidad · no está a la venta en vivo</span>
+          </span>
+          <span class="partner-slot-copy">
+            <strong>Así se sentiría una marca en el arcade.</strong>
+            <em>Quietud, tipografía del estudio, un CTA. Nada de parpadeos ni scripts de terceros.</em>
+          </span>
+        </div>
+      </aside>
+
+      <section class="waitlist studio-wrap" id="waitlist">
+        <header class="section-head reveal">
+          <p class="kicker">Lista de espera</p>
+          <h2>Cuéntanos quién eres.</h2>
+          <p class="section-lead">
+            Mandamos el formulario a
+            <code>https://alpha11.app/api/partners/waitlist</code>. Si la API no está, queda en este
+            dispositivo y abrimos un correo a
+            <a href="mailto:Aggviamonte@gmail.com">Aggviamonte@gmail.com</a>. Te escribimos.
+          </p>
+        </header>
+
+        <form class="waitlist-form reveal" id="waitlist-form" novalidate>
+          <label>
+            <span>Tu nombre</span>
+            <input type="text" name="name" autocomplete="name" required maxlength="80" placeholder="Alex Rivera" />
+          </label>
+          <label>
+            <span>Email de trabajo</span>
+            <input type="email" name="email" autocomplete="email" required maxlength="120" placeholder="alex@marca.com" />
+          </label>
+          <label>
+            <span>Marca o medio</span>
+            <input type="text" name="company" autocomplete="organization" required maxlength="80" placeholder="Nombre de la marca" />
+          </label>
+          <label>
+            <span>Banda de presupuesto</span>
+            <select name="budget_band">
+              <option value="undisclosed" selected>Aún no lo sé</option>
+              <option value="under_1k">Menos de 1k</option>
+              <option value="1k_5k">1k – 5k</option>
+              <option value="5k_20k">5k – 20k</option>
+              <option value="20k_plus">Más de 20k</option>
+            </select>
+          </label>
+          <label class="waitlist-note">
+            <span>Qué tienes en mente</span>
+            <textarea name="message" rows="4" maxlength="600" placeholder="Hub nativo, pieza in-game más adelante, colaboración de marca…"></textarea>
+          </label>
+          <div class="waitlist-actions">
+            <button class="btn btn-lime" type="submit">Escribir al estudio</button>
+            <a class="btn btn-ghost" href="mailto:Aggviamonte@gmail.com?subject=ALPHA-11%20partners">O abrir el correo vacío</a>
+          </div>
+          <p class="waitlist-status" id="waitlist-status" role="status" hidden></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="studio-foot">
+      <div class="studio-wrap studio-foot-inner">
+        <p><strong>ALPHA-11 LAB</strong> · <a href="/">Volver al arcade</a></p>
+        <p>Gratis · PWA · Sin cuenta</p>
+        <p><a href="mailto:Aggviamonte@gmail.com">Aggviamonte@gmail.com</a></p>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/partners.ts"></script>
+  </body>
+</html>
