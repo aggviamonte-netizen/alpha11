@@ -9,3 +9,8 @@ export function loadKickBest(): number {
 export function saveKickBest(score: number): void {
   if (score > readNum(KICK_BEST_KEY)) writeNum(KICK_BEST_KEY, score);
 }
+
+/** True only when this run's streak beats the best captured before any write. */
+export function isNewKickRecord(score: number, prevBest: number): boolean {
+  return score > 0 && score > prevBest;
+}

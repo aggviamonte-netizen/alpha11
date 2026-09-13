@@ -20,7 +20,7 @@ import {
   renderReticle,
   SPOT,
 } from './kickArt';
-import { loadKickBest, saveKickBest } from './kickScore';
+import { isNewKickRecord, loadKickBest, saveKickBest } from './kickScore';
 import { sfxGoal, sfxKick, sfxPost, sfxSave, sfxWhistle, sfxWide, unlockKickSfx } from './kickSfx';
 
 type Phase = 'start' | 'ready' | 'flying' | 'hold' | 'over';
@@ -81,6 +81,7 @@ export class KickScene extends Phaser.Scene {
   private phase: Phase = 'start';
   private score = 0;
   private best = 0;
+  private prevBest = 0;
   private newRecord = false;
   private pulse = 0;
   private aimAngle = 0;
@@ -114,8 +115,7 @@ export class KickScene extends Phaser.Scene {
   create(): void {
     this.phase = 'start';
     this.score = 0;
-    this.best = loadKickBest();
-    this.newRecord = false;
+    this.armRecordTracking();
     this.pulse = 0;
     this.aimAngle = 0;
     this.aimHeight = 0.48;
@@ -229,7 +229,7 @@ export class KickScene extends Phaser.Scene {
     el('overlay-start').onclick = null;
     this.phase = 'ready';
     this.score = 0;
-    this.newRecord = false;
+    this.armRecordTracking();
     this.liveAt = this.time.now + 240;
     this.syncHud();
     this.resetKick(true);
@@ -381,9 +381,9 @@ export class KickScene extends Phaser.Scene {
   private onGoal(x: number, y: number): void {
     this.phase = 'hold';
     this.score += 1;
-    if (this.score > this.best) this.newRecord = true;
+    if (isNewKickRecord(this.score, this.prevBest)) this.newRecord = true;
     saveKickBest(this.score);
-    this.best = loadKickBest();
+    this.best = Math.max(this.prevBest, this.score);
     this.syncHud();
     sfxGoal();
     burstDots(this, x, y, 0xe8ff47, 12);
@@ -410,8 +410,6 @@ export class KickScene extends Phaser.Scene {
 
   private onMiss(kind: Outcome, x: number, y: number): void {
     this.phase = 'over';
-    saveKickBest(this.score);
-    this.best = loadKickBest();
     this.syncHud();
     this.cameras.main.shake(200, 0.014);
 
@@ -451,7 +449,7 @@ export class KickScene extends Phaser.Scene {
 
     el('over-score').textContent = `Racha ${this.score} · Mejor ${this.best}`;
     const rec = document.getElementById('over-record');
-    if (rec) rec.hidden = !(this.score > 0 && this.newRecord);
+    if (rec) rec.hidden = !this.newRecord;
     this.time.delayedCall(880, () => {
       el('overlay-over').hidden = false;
     });
@@ -617,6 +615,14 @@ export class KickScene extends Phaser.Scene {
       if (m.g.y < 150) m.g.y = 720;
       if (m.g.y > 760) m.g.y = 180;
     }
+  }
+
+  private armRecordTracking(): void {
+    this.prevBest = loadKickBest();
+    this.best = this.prevBest;
+    this.newRecord = false;
+    const rec = document.getElementById('over-record');
+    if (rec) rec.hidden = true;
   }
 
   private syncHud(): void {
