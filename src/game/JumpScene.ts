@@ -461,7 +461,7 @@ export class JumpScene extends Phaser.Scene {
     sky.fillRect(0, 0, W, H);
     sky.fillStyle(0x141822, 1);
     sky.fillEllipse(W * 0.2, 160, 260, 180);
-    sky.fillStyle(0x7b4dff, 0.16);
+    sky.fillStyle(0x3a5f8a, 0.16);
     sky.fillEllipse(80, 210, 220, 110);
     sky.fillStyle(0xff8bd1, 0.12);
     sky.fillEllipse(W - 40, 620, 240, 140);

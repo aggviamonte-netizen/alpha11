@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
-const HULL = 0x2a2048;
-const MID = 0x7b4dff;
+const HULL = 0x1a2740;
+const MID = 0x3a5f8a;
 const LIME = 0xe8ff47;
 const CYAN = 0x6ee7ff;
 const PINK = 0xff8bd1;
@@ -25,7 +25,7 @@ export function drawPulseCraft(scene: Phaser.Scene, x: number, y: number): Craft
   g.fillStyle(INK, 0.32);
   g.fillEllipse(1, 12, 28, 20);
 
-  g.fillStyle(0x1a1628, 1);
+  g.fillStyle(0x122033, 1);
   g.fillRoundedRect(-15, 16, 11, 13, 4);
   g.fillRoundedRect(4, 16, 11, 13, 4);
   g.fillStyle(CYAN, 0.4);
