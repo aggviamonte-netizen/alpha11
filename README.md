@@ -1,6 +1,8 @@
 # ALPHA-11
 
-Hub PWA + four lab minigames for [alpha11.app](https://alpha11.app).
+Hub PWA + lab minigames for [alpha11.app](https://alpha11.app).
+
+Hub cards are a growing column (not a fixed set of four). This tree owns LAB vegetables + RUSH; other PRs append their own cards.
 
 Stack: Vite + Phaser 3 + Matter.js. TypeScript. Mobile-first 390×844.
 

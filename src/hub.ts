@@ -22,6 +22,9 @@ if (rush) {
   rush.title = 'BLOK';
 }
 
+// Parallel PRs paint extra orbs when they append cards:
+// paintOrb('orb-kick', …) / paintOrb('orb-sniper', …)
+
 const row = document.getElementById('canon-row');
 if (row) {
   const featured = CREATURES.filter((c) => [1, 3, 5, 7, 11].includes(c.tier));
