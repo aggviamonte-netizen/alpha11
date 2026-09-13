@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local wrangler / optional Vite webhook tests.
+# Do not commit .dev.vars.
+
+# Optional. HTTPS URL (or http://localhost) that receives each accepted waitlist row.
+# Production:
+#   npx wrangler secret put PARTNERS_WEBHOOK
+# PARTNERS_WEBHOOK=

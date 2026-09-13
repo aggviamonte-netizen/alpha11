@@ -1,0 +1,42 @@
+{
+  "title": "ALPHA-11 OpenRTB-ish placeholder (not live)",
+  "status": "reserved",
+  "implemented": false,
+  "notes": [
+    "No auction runs. No bid requests are sent. No demand partners are connected.",
+    "This document is a future-shaped sketch so a marketplace can land without inventing IDs later.",
+    "Privacy: any future RTB path must stay first-party until consent exists (see README, Spanish notes)."
+  ],
+  "future_endpoint": {
+    "method": "POST",
+    "path": "/api/rtb/bid",
+    "today": "not routed — Worker returns 404"
+  },
+  "direct_io": {
+    "path": "Human insertion order → creatives reviewed → first-party tags only",
+    "slot_ids": ["hub_banner", "hub_native", "interstitial_soft"]
+  },
+  "bid_request_shape": {
+    "id": "request-uuid",
+    "imp": [
+      {
+        "id": "1",
+        "tagid": "hub_banner",
+        "banner": { "w": 320, "h": 50 }
+      }
+    ],
+    "site": {
+      "domain": "alpha11.app",
+      "page": "https://alpha11.app/"
+    },
+    "device": {
+      "ua": "redacted-until-policy",
+      "ip": "omitted-by-default"
+    },
+    "user": {
+      "id": "never-without-consent"
+    },
+    "at": 1,
+    "tmax": 200
+  }
+}
