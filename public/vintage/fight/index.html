@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALPHA-11 FIGHT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Knewave&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: url('images/background.png') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Knewave', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .game-title {
+            text-align: center;
+            color: white;
+            font-size: min(48px, 8vw);
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0px rgba(0, 0, 0, 0.5);
+            animation: bounce 2s infinite;
+        }
+        .hide-during-start {
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s linear;
+        }
+        .show-after-start {
+            visibility: visible;
+            opacity: 1;
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        .game-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            max-width: 1600px;
+            width: 100%;
+        }
+        .controls-panel {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            min-width: 150px;
+            font-family: 'Knewave', cursive;
+            visibility: visible;
+        }
+        .controls-panel.hidden {
+            visibility: hidden;
+        }
+        .controls-panel h3 {
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            font-size: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+        }
+        .controls-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .controls-list li {
+            margin: 12px 0;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
+        }
+        .key {
+            background: #4CAF50;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+            display: inline-block;
+            min-width: 20px;
+            text-align: center;
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+        }
+        #game-container {
+            text-align: center;
+            position: relative;
+            width: 95vw;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .game-content {
+            width: 100%;
+            position: relative;
+        }
+        canvas {
+            border: 2px solid #8e8d8d;
+            width: 100%;
+            height: auto;
+            max-height: 90vh;
+            object-fit: contain;
+            display: block;
+            background-color: transparent;
+        }
+        #hud {
+            color: white;
+            font-family: 'Knewave', cursive;
+            margin-bottom: 10px;
+            font-size: min(24px, 4vw);
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+        }
+        #menu-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: min(90%, 400px);
+        }
+        .menu-button {
+            display: block;
+            width: 100%;
+            max-width: 200px;
+            padding: 10px;
+            margin: 10px auto;
+            font-size: min(24px, 5vw);
+            font-family: 'Knewave', cursive;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        .menu-button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        #pause-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: min(90%, 400px);
+            display: none;
+        }
+        .pause-title {
+            color: #333;
+            font-size: min(36px, 6vw);
+            margin: 0 0 20px 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .overlay-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            display: none;
+            z-index: 999;
+        }
+        #game-over-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: min(90%, 400px);
+            display: none;
+            text-align: center;
+        }
+        .winner-text {
+            color: #333;
+            font-size: min(48px, 8vw);
+            margin: 0 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+        }
+        .player-name-input {
+            width: 100%;
+            max-width: 200px;
+            padding: 10px;
+            margin: 10px auto;
+            font-size: min(20px, 4vw);
+            font-family: 'Knewave', cursive;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            text-align: center;
+            display: block;
+        }
+        .player-name-input::placeholder {
+            color: #999;
+            opacity: 1;
+        }
+        .player-name-input:focus {
+            outline: none;
+            border-color: #45a049;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+        .input-group {
+            margin-bottom: 20px;
+            display: none;
+        }
+        .input-label {
+            color: #333;
+            font-size: min(20px, 4vw);
+            margin-bottom: 5px;
+        }
+        #single-player-inputs, #multiplayer-inputs {
+            display: none;
+        }
+        .mode-buttons {
+            margin-bottom: 20px;
+        }
+        .back-button {
+            background-color: #666;
+            margin-top: 20px;
+        }
+        .back-button:hover {
+            background-color: #555;
+        }
+        .pause-instruction {
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Knewave', cursive;
+            font-size: 16px;
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+        .pause-instruction.show {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper">
+        <div class="controls-panel hide-during-start" id="player1-controls">
+            <h3>Player 1 Controls</h3>
+            <ul class="controls-list">
+                <li><span class="key">W</span> Jump</li>
+                <li><span class="key">A</span> Move Left</li>
+                <li><span class="key">S</span> Duck</li>
+                <li><span class="key">D</span> Move Right</li>
+                <li><span class="key">Z</span> Punch</li>
+                <li><span class="key">X</span> Kick</li>
+                <li><span class="key">C</span> Fireball</li>
+            </ul>
+        </div>
+
+        <div id="game-container">
+            <h1 class="game-title hide-during-start">FIGHT</h1>
+            <div class="game-content">
+                <div class="overlay-backdrop" id="menu-backdrop"></div>
+                <div id="menu-overlay">
+                    <div class="mode-buttons">
+                        <button class="menu-button" id="singleplayer">Single Player</button>
+                        <button class="menu-button" id="multiplayer">Two Players</button>
+                    </div>
+                    
+                    <div id="single-player-inputs" class="input-group">
+                        <div class="input-label">Enter Your Name:</div>
+                        <input type="text" id="player1-name-single" class="player-name-input" placeholder="Player 1" maxlength="12">
+                        <button class="menu-button" id="start-single">Start Game</button>
+                        <button class="menu-button back-button" id="back-single">Back</button>
+                    </div>
+
+                    <div id="multiplayer-inputs" class="input-group">
+                        <div class="input-label">Enter Player Names:</div>
+                        <input type="text" id="player1-name-multi" class="player-name-input" placeholder="Player 1" maxlength="12">
+                        <input type="text" id="player2-name-multi" class="player-name-input" placeholder="Player 2" maxlength="12">
+                        <button class="menu-button" id="start-multi">Start Game</button>
+                        <button class="menu-button back-button" id="back-multi">Back</button>
+                    </div>
+                </div>
+                <div class="overlay-backdrop" id="pause-backdrop"></div>
+                <div id="pause-menu">
+                    <h2 class="pause-title">Paused</h2>
+                    <button class="menu-button" id="resume">Resume</button>
+                    <button class="menu-button" id="exit">Exit to Menu</button>
+                </div>
+                <div class="overlay-backdrop" id="game-over-backdrop"></div>
+                <div id="game-over-menu" class="menu">
+                    <h2 id="winner-message">Player 1 Wins!</h2>
+                    <button id="play-again" class="menu-button">Play Again</button>
+                    <button id="exit-to-menu" class="menu-button">Exit to Menu</button>
+                </div>
+                <canvas id="gameCanvas"></canvas>
+                <div class="pause-instruction">Press Esc to pause</div>
+            </div>
+        </div>
+
+        <div class="controls-panel hide-during-start" id="player2-controls">
+            <h3>Player 2 Controls</h3>
+            <ul class="controls-list">
+                <li><span class="key">↑</span> Jump</li>
+                <li><span class="key">←</span> Move Left</li>
+                <li><span class="key">↓</span> Duck</li>
+                <li><span class="key">→</span> Move Right</li>
+                <li><span class="key">,</span> Punch</li>
+                <li><span class="key">.</span> Kick</li>
+                <li><span class="key">/</span> Fireball</li>
+            </ul>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html> 

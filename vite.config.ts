@@ -3,7 +3,20 @@ import type { Connect, Plugin } from 'vite';
 import { defineConfig } from 'vite';
 import { partnersApiMock } from './worker/dev/vite-api';
 
-const PAGES = ['/lab', '/jump', '/shift', '/rush', '/kick', '/sniper'];
+const PAGES = [
+  '/lab',
+  '/jump',
+  '/shift',
+  '/rush',
+  '/kick',
+  '/sniper',
+  '/vintage/stack',
+  '/vintage/sudoku',
+  '/vintage/space',
+  '/vintage/fight',
+  '/vintage/credits',
+  '/arcade',
+];
 
 function rewritePages(): Connect.NextHandleFunction {
   return (req, _res, next) => {

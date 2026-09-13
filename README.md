@@ -13,7 +13,7 @@ npm i
 npm run dev
 ```
 
-Open `/` (hub), `/lab`, `/jump`, `/shift`, `/rush`, `/kick`, `/sniper`.
+Open `/` (hub), `/lab`, `/jump`, `/shift`, `/rush`, `/kick`, `/sniper`, plus Vintage `/vintage/stack`, `/vintage/sudoku`, `/vintage/space`, `/vintage/fight`.
 
 ## Build
 
@@ -31,7 +31,7 @@ Static hub (unchanged): build `dist` and publish as Workers Assets / Pages.
 
 API: `wrangler deploy` updates the existing Worker named `alpha11`. `run_worker_first` is only `/api/*`, so game routes stay on assets.
 
-Cloudflare Pages `_redirects` maps `/lab`, `/jump`, `/shift`, `/rush`, `/kick`, and `/sniper` onto the multi-page folders.
+Cloudflare Pages `_redirects` maps `/lab`, `/jump`, `/shift`, `/rush`, `/kick`, `/sniper`, Vintage, and `/arcade` onto the multi-page folders.
 
 The same repo also ships a Cloudflare Worker (`name`: `alpha11`, matching the existing account Worker) that owns `/api/*` only. Hub HTML is not rewritten. Production already has KV namespace `alpha11-waitlist` (`86685a78b0e44830be548f12dcba3876`).
 
@@ -47,7 +47,8 @@ npm run deploy
 
 ## Play
 
-- Hub cards **LAB**, **JUMP**, **SHIFT**, **RUSH**, **KICK**, **SNIPER** all open playable games. Footer: Gratis · Añade a inicio de pantalla.
+- Hub cards **LAB**, **JUMP**, **SHIFT**, **RUSH**, **KICK**, **SNIPER** plus Vintage **STACK / SUDOKU / SPACE / FIGHT**. Footer: Gratis · Añade a inicio de pantalla.
+- Vintage games are vendored MIT static files under `public/vintage/` (credits: `/vintage/credits`, `vendor/NOTICE.md`).
 - **LAB** (`/lab`): 11 vegetable tiers (pea → Alpha veggie) with distinct silhouettes. Same-tier overlap ~200ms merges up. Keys: `alpha11_lab_score` / `alpha11_lab_best`.
 - **JUMP** (`/jump`): one-touch flap runner as A5 Berenjena through lab glass / beams. Score = distance. Best: `alpha11_jump_best`.
 - **SHIFT** (`/shift`): 4×4 swipe merge, A1 → higher vegetable tiers. Keys: `alpha11_shift_score` / `alpha11_shift_best`.
