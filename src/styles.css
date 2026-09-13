@@ -222,6 +222,70 @@ button {
   background: #c9842a;
 }
 
+.shift-orb,
+.kick-orb,
+.sniper-orb {
+  position: relative;
+}
+
+.shift-orb {
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, #6ee7ff 0 18%, transparent 19%),
+    linear-gradient(315deg, #8b9bff 0 16%, transparent 17%),
+    linear-gradient(180deg, #1a2238, #12161f);
+  box-shadow:
+    inset 0 0 0 3px #6ee7ff,
+    inset 0 2px 4px rgba(255, 255, 255, 0.35),
+    0 8px 16px rgba(0, 0, 0, 0.35);
+}
+
+.shift-orb::before {
+  content: '◆';
+  color: #e8ff47;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.kick-orb {
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.55) 0 8%, transparent 18%),
+    repeating-linear-gradient(35deg, transparent 0 7px, rgba(11, 11, 12, 0.28) 7px 8px),
+    #f4f1ea;
+}
+
+.kick-orb::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  border: 2px solid #0b0b0c;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px #7cffb2;
+}
+
+.sniper-orb {
+  background:
+    radial-gradient(circle at 50% 50%, #e8ff47 0 6%, transparent 7%),
+    radial-gradient(circle at 50% 50%, transparent 0 16%, #8b9bff 16% 18%, transparent 19%),
+    #1a1e2a;
+}
+
+.sniper-orb::before {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 2px;
+  background: #6ee7ff;
+}
+
+.sniper-orb::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 28px;
+  background: #6ee7ff;
+}
+
 .game-card[data-game='sniper'] .game-go {
   background: #8b9bff;
   color: var(--bg);
@@ -418,6 +482,12 @@ button {
 
 .blok-chip {
   background: #f0c094;
+}
+
+.kick-chip {
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.6) 0 14%, transparent 22%),
+    #f4f1ea;
 }
 
 .jump-chip,
