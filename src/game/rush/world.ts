@@ -57,27 +57,26 @@ export class RushWorld {
   private density = 1;
 
   constructor(scene: Scene) {
-    scene.background = new Color(C.fog);
-    scene.fog = new Fog(C.fog, FOG_NEAR, FOG_FAR);
+    scene.background = new Color(0x1a2c38);
+    scene.fog = new Fog(0x1a2c38, FOG_NEAR, FOG_FAR);
 
-    const sky = new Mesh(
-      new SphereGeometry(160, 24, 16),
-      new MeshStandardMaterial({
-        map: SKY_TEX,
-        side: BackSide,
-        depthWrite: false,
-        roughness: 1,
-        metalness: 0,
-        emissive: new Color(0x10141c),
-        emissiveIntensity: 0.35,
-      }),
-    );
+    const skyMat = new MeshStandardMaterial({
+      map: SKY_TEX,
+      side: BackSide,
+      depthWrite: false,
+      roughness: 1,
+      metalness: 0,
+      emissive: new Color(0x24384a),
+      emissiveIntensity: 0.55,
+    });
+    skyMat.fog = false;
+    const sky = new Mesh(new SphereGeometry(160, 24, 16), skyMat);
     scene.add(sky);
 
-    const hemi = new HemisphereLight(0x6a8aaa, 0x2a2218, 0.62);
+    const hemi = new HemisphereLight(0x9ec4e6, 0x3a2a1c, 1.15);
     scene.add(hemi);
 
-    this.sun = new DirectionalLight(0xfff1d6, 1.55);
+    this.sun = new DirectionalLight(0xfff4e2, 2.15);
     this.sun.position.set(18, 28, 8);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(1024, 1024);
@@ -90,19 +89,19 @@ export class RushWorld {
     this.sun.shadow.bias = -0.0008;
     scene.add(this.sun);
 
-    const rim = new PointLight(C.cyan, 18, 42, 2);
+    const rim = new PointLight(C.cyan, 28, 48, 1.8);
     rim.position.set(-10, 8, -6);
     scene.add(rim);
 
-    this.fill = new PointLight(C.lime, 6, 10, 2);
+    this.fill = new PointLight(C.lime, 10, 12, 1.7);
     scene.add(this.fill);
 
     const voidMesh = new Mesh(
       new PlaneGeometry(400, 400),
-      new MeshStandardMaterial({ color: 0x08090c, roughness: 1, metalness: 0 }),
+      new MeshStandardMaterial({ color: 0x141c24, roughness: 0.92, metalness: 0.08 }),
     );
     voidMesh.rotation.x = -Math.PI / 2;
-    voidMesh.position.y = -18;
+    voidMesh.position.y = -14;
     voidMesh.receiveShadow = true;
     scene.add(voidMesh);
 
@@ -123,7 +122,13 @@ export class RushWorld {
 
     this.city = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
-      new MeshStandardMaterial({ color: 0xffffff, roughness: 0.48, metalness: 0.28 }),
+      new MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.42,
+        metalness: 0.22,
+        emissive: new Color(0x1a2430),
+        emissiveIntensity: 0.25,
+      }),
       80,
     );
     this.city.castShadow = true;
@@ -205,9 +210,9 @@ export class RushWorld {
     for (const d of items) {
       this.dummy.position.copy(d.pos);
       if (d.kind === 'tower' && ti < maxT) {
-        const h = 6 + ((d.s * 13) % 18);
-        this.dummy.scale.set(2.2 + (d.s % 3), h, 2.2 + ((d.s * 3) % 2));
-        this.dummy.position.y = d.pos.y + h * 0.5;
+        const h = 8 + ((d.s * 13) % 22);
+        this.dummy.scale.set(2.6 + (d.s % 3), h, 2.4 + ((d.s * 3) % 2));
+        this.dummy.position.y = d.pos.y + h * 0.45;
         this.dummy.rotation.set(0, d.s * 0.15, 0);
         this.dummy.updateMatrix();
         this.city.setMatrixAt(ti, this.dummy.matrix);

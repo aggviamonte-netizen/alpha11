@@ -179,15 +179,17 @@ export class RushTrack {
       track: new MeshStandardMaterial({
         map: TRACK_TEX,
         color: 0xffffff,
-        roughness: 0.38,
-        metalness: 0.62,
+        roughness: 0.32,
+        metalness: 0.55,
+        emissive: new Color(0x151820),
+        emissiveIntensity: 0.15,
       }),
       stripe: new MeshStandardMaterial({
         color: C.lime,
         emissive: new Color(C.lime),
-        emissiveIntensity: 0.55,
-        roughness: 0.28,
-        metalness: 0.2,
+        emissiveIntensity: 0.95,
+        roughness: 0.22,
+        metalness: 0.15,
       }),
       rail: new MeshStandardMaterial({
         color: C.rail,
@@ -355,6 +357,10 @@ export class RushTrack {
     return this.props.filter((p) => p.kind === kind && !p.taken && Math.abs(p.s - s) < window);
   }
 
+  scroll(s: number): void {
+    TRACK_TEX.offset.y = -s * 0.12;
+  }
+
   dispose(): void {
     this.clear();
     for (const m of Object.values(this.mats)) m.dispose();
@@ -483,6 +489,24 @@ export class RushTrack {
       }
     }
 
+    for (let i = 0; i < samples.length; i += 5) {
+      const f = this.frameAt(samples[i].s);
+      for (const side of [-1, 1] as const) {
+        const lamp = new Mesh(new CylinderGeometry(0.07, 0.09, 3.2, 6), this.mats.rail);
+        const bulb = new Mesh(new SphereGeometry(0.16, 8, 8), zone ? this.mats.zone : this.mats.stripe);
+        lamp.position.copy(f.pos).addScaledVector(f.binormal, side * (w + 0.35)).addScaledVector(f.normal, 1.55);
+        bulb.position.copy(lamp.position).addScaledVector(f.normal, 1.55);
+        root.add(lamp, bulb);
+      }
+    }
+    if (s1 - s0 > 16 && Math.random() < 0.55) {
+      const mid = this.frameAt((s0 + s1) * 0.5);
+      const arch = new Mesh(new TorusGeometry(w + 0.8, 0.1, 6, 18, Math.PI), this.mats.stripe);
+      align(arch, mid.pos.clone().addScaledVector(mid.normal, 0.2), mid.tangent, mid.normal);
+      arch.rotation.z = Math.PI;
+      root.add(arch);
+    }
+
     this.scene.add(root);
     this.pieces.push({ root, s0, s1 });
   }
@@ -491,7 +515,7 @@ export class RushTrack {
     for (let s = s0 + 4; s < s1; s += 7 + Math.random() * 6) {
       const f = this.frameAt(s);
       const side = Math.random() < 0.5 ? -1 : 1;
-      const dist = 10 + Math.random() * 16;
+      const dist = 5.4 + Math.random() * 4.8;
       const pos = f.pos.clone().addScaledVector(f.binormal, side * dist);
       pos.y -= 1.2;
       const kind = Math.random() < 0.45 ? 'tower' : Math.random() < 0.5 ? 'pipe' : 'tank';

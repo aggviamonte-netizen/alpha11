@@ -23,5 +23,5 @@ export const C = {
   skyHorizon: 0x2a3d4a,
 } as const;
 
-export const FOG_NEAR = 28;
-export const FOG_FAR = 118;
+export const FOG_NEAR = 48;
+export const FOG_FAR = 150;

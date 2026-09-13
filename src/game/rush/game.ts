@@ -2,6 +2,7 @@ import {
   ACESFilmicToneMapping,
   Clock,
   Color,
+  PMREMGenerator,
   PerspectiveCamera,
   PCFSoftShadowMap,
   Scene,
@@ -9,6 +10,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { el } from '../dom';
 import { loadRushBest, saveRushBest } from '../rushScore';
 import { sfxBoost, sfxCore, sfxJump, sfxLand, sfxOrbit, sfxOver, unlockSfx } from '../sfx';
@@ -95,7 +97,7 @@ export class RushGame {
   constructor(host: HTMLElement) {
     this.host = host;
     this.stage = host.closest('.stage') ?? host;
-    this.camera = new PerspectiveCamera(54, 390 / 844, 0.12, 180);
+    this.camera = new PerspectiveCamera(64, 390 / 844, 0.12, 200);
     this.renderer = new WebGLRenderer({
       antialias: true,
       alpha: false,
@@ -103,7 +105,10 @@ export class RushGame {
     });
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMappingExposure = 1.22;
+    const pmrem = new PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setClearColor(new Color(C.fog), 1);
@@ -163,7 +168,7 @@ export class RushGame {
     this.world.setShadows(this.quality.shadows);
     this.world.setDensity(this.quality.city);
     this.fx.setRate(this.quality.particles);
-    this.renderer.toneMappingExposure = tier === 0 ? 0.98 : 1.08;
+    this.renderer.toneMappingExposure = tier === 0 ? 1.05 : 1.22;
   }
 
   private bindUi(): void {
@@ -252,6 +257,7 @@ export class RushGame {
     }
 
     this.animateCores(dt);
+    this.track.scroll(this.s);
     this.placeHero();
     this.updateCamera(dt);
     this.world.sync(this.track, this.rig.root.position, this.boostT > 0);
@@ -484,30 +490,35 @@ export class RushGame {
   private updateCamera(dt: number): void {
     const f = this.track.frameAt(this.s);
     const speed = this.phase === 'play' ? this.speed() : 6;
-    const back = 6.4 - Math.min(1.4, speed * 0.04);
-    const lift = 2.35 + (this.looping ? 0.6 : 0);
-    const lookAhead = 8 + speed * 0.22;
+    const back = 5.4 - Math.min(1.1, speed * 0.03);
+    const lift = 2.7 + (this.looping ? 0.6 : 0);
+    const lookAhead = 7.2 + speed * 0.18;
     let target: Vector3;
     let look: Vector3;
     if (this.looping) {
       const pos = this.rig.root.position;
       const tan = this.loopFwd.clone().multiplyScalar(Math.cos(this.loopA)).addScaledVector(this.loopNrm, Math.sin(this.loopA));
-      target = pos.clone().addScaledVector(tan, -5.2).addScaledVector(this.loopNrm, 2.2);
+      target = pos.clone().addScaledVector(tan, -5.2).addScaledVector(this.loopNrm, 2.4).addScaledVector(f.binormal, 1.6);
       look = pos.clone().addScaledVector(tan, 6);
     } else if (this.phase === 'start') {
-      target = this.rig.root.position.clone().add(this.tmp.set(3.4, 2.1, -5.6));
-      look = this.rig.root.position.clone().add(new Vector3(0.2, 0.7, 1.4));
+      const spin = Math.sin(this.pulse * 0.45) * 0.6;
+      target = this.rig.root.position
+        .clone()
+        .addScaledVector(f.binormal, 3.6 + spin)
+        .addScaledVector(f.normal, 1.7)
+        .addScaledVector(f.tangent, -3.4);
+      look = this.rig.root.position.clone().addScaledVector(f.normal, 0.7);
     } else {
       target = f.pos
         .clone()
         .addScaledVector(f.tangent, -back)
         .addScaledVector(f.normal, lift)
-        .addScaledVector(f.binormal, this.lateral * 0.22);
+        .addScaledVector(f.binormal, 2.15 + this.lateral * 0.18);
       look = f.pos
         .clone()
         .addScaledVector(f.tangent, lookAhead)
-        .addScaledVector(f.normal, 0.9)
-        .addScaledVector(f.binormal, this.lateral * 0.35);
+        .addScaledVector(f.normal, 0.75)
+        .addScaledVector(f.binormal, this.lateral * 0.28);
     }
     const k = 1 - Math.pow(0.0008, dt);
     this.camPos.lerp(target, Math.min(1, k * (this.phase === 'start' ? 0.45 : 1)));
@@ -518,7 +529,7 @@ export class RushGame {
     }
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
-    const fov = 52 + Math.min(12, speed * 0.35) + (this.boostT > 0 ? 6 : 0);
+    const fov = 62 + Math.min(10, speed * 0.28) + (this.boostT > 0 ? 5 : 0);
     if (Math.abs(this.camera.fov - fov) > 0.05) {
       this.camera.fov = this.camera.fov + (fov - this.camera.fov) * 0.08;
       this.camera.updateProjectionMatrix();

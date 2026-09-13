@@ -47,7 +47,7 @@ export function createBlok(): BlokRig {
   const boot = mat(C.boot, { roughness: 0.5 });
   const hair = mat(C.hair, { roughness: 0.55 });
   const hairDeep = mat(C.hairDeep, { roughness: 0.55 });
-  const lime = mat(C.lime, { roughness: 0.28, metalness: 0.2, emissive: new Color(C.lime), emissiveIntensity: 0.35 });
+  const lime = mat(C.lime, { roughness: 0.28, metalness: 0.2, emissive: new Color(C.lime), emissiveIntensity: 0.7 });
   const clip = mat(C.clip, { roughness: 0.25, metalness: 0.45 });
 
   const legL = new Group();
@@ -78,7 +78,12 @@ export function createBlok(): BlokRig {
   const slot = mesh(new CylinderGeometry(0.055, 0.055, 0.03, 8), mat(0x0b0b0c, { roughness: 0.3 }));
   slot.rotation.x = Math.PI / 2;
   slot.position.set(0, 0.04, 0.18);
-  torso.add(chest, belly, badge, slot);
+  const pack = mesh(new CapsuleGeometry(0.16, 0.12, 4, 8), lime);
+  pack.position.set(0, 0.02, -0.16);
+  pack.scale.set(0.9, 0.7, 0.45);
+  const packCore = mesh(new SphereGeometry(0.07, 8, 8), mat(0x0b0b0c, { roughness: 0.25 }));
+  packCore.position.set(0, 0.02, -0.2);
+  torso.add(chest, belly, badge, slot, pack, packCore);
 
   const armL = new Group();
   const armR = new Group();
@@ -102,9 +107,9 @@ export function createBlok(): BlokRig {
   head.position.y = 0.78;
   const skull = mesh(new SphereGeometry(0.24, 18, 14), skin);
   skull.scale.set(1, 0.96, 0.92);
-  const hairCap = mesh(new SphereGeometry(0.25, 16, 12), hair);
-  hairCap.position.y = 0.08;
-  hairCap.scale.set(1.02, 0.62, 0.95);
+  const hairCap = mesh(new SphereGeometry(0.255, 16, 12), hair);
+  hairCap.position.y = 0.1;
+  hairCap.scale.set(1.08, 0.72, 1.02);
   const bang = mesh(new SphereGeometry(0.08, 10, 8), hairDeep);
   bang.position.set(-0.12, 0.12, 0.12);
   const bang2 = mesh(new SphereGeometry(0.075, 10, 8), hairDeep);
@@ -127,6 +132,7 @@ export function createBlok(): BlokRig {
   head.add(skull, hairCap, bang, bang2, eyeL, eyeR, shineL, shineR, smile, cheekL, cheekR);
 
   body.rotation.y = Math.PI;
+  body.scale.setScalar(1.28);
   body.add(legL, legR, torso, armL, armR, head);
   return { root, body, head, torso, armL, armR, legL, legR };
 }

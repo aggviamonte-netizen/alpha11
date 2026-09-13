@@ -1041,8 +1041,8 @@ button {
 }
 
 .overlay.rush-veil {
-  background: linear-gradient(180deg, rgba(11, 11, 12, 0.28), rgba(11, 11, 12, 0.52));
-  backdrop-filter: blur(5px);
+  background: linear-gradient(180deg, rgba(11, 11, 12, 0.12), rgba(11, 11, 12, 0.28));
+  backdrop-filter: blur(2px);
 }
 
 .rush-sub {
