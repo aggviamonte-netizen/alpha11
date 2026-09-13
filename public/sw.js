@@ -1,4 +1,4 @@
-const CACHE = 'alpha11-v4';
+const CACHE = 'alpha11-v6';
 const SHELL = [
   '/',
   '/lab/',
@@ -7,6 +7,7 @@ const SHELL = [
   '/rush/',
   '/sniper/',
   '/kick/',
+  '/partners/',
   '/vintage/stack/',
   '/vintage/sudoku/',
   '/vintage/space/',
