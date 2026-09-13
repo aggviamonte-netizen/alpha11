@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0B0B0C" />
     <meta name="google" content="notranslate" />
-    <meta name="description" content="ALPHA-11 RUSH — velocidad" />
+    <meta name="description" content="ALPHA-11 RUSH — velocidad 3D" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ALPHA-11 RUSH" />
@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body class="lab-body">
-    <div class="stage">
+    <div class="stage rush-stage">
       <header class="hud">
         <div class="hud-brand">
           <svg class="beaker" viewBox="0 0 16 16" aria-hidden="true">
@@ -53,15 +53,23 @@
         </div>
       </header>
       <div id="game"></div>
-      <p class="drop-hint" id="drop-hint" hidden>TOCA Y MANTÉN</p>
-      <div class="overlay" id="overlay-start">
+      <div class="rush-vignette" aria-hidden="true"></div>
+      <div class="rush-wash" id="rush-wash" aria-hidden="true"></div>
+      <div class="rush-floats" id="rush-floats" aria-hidden="true"></div>
+      <p class="drop-hint" id="drop-hint" hidden>SALTO · TURBO</p>
+      <div class="rush-controls" id="rush-controls" hidden>
+        <button type="button" class="rush-btn rush-btn-jump" id="btn-jump">SALTO</button>
+        <button type="button" class="rush-btn rush-btn-boost" id="btn-boost">TURBO</button>
+      </div>
+      <div class="overlay rush-veil" id="overlay-start">
         <div class="panel start-panel">
           <p class="eyebrow">ALPHA-11</p>
           <h1>RUSH</h1>
-          <p class="toca">TOCA Y MANTÉN</p>
+          <p class="toca">TOCA</p>
+          <p class="rush-sub">salto · turbo</p>
         </div>
       </div>
-      <div class="overlay" id="overlay-over" hidden>
+      <div class="overlay rush-veil" id="overlay-over" hidden>
         <div class="panel over-panel">
           <p class="eyebrow">ALPHA-11 RUSH</p>
           <p class="fin">FIN</p>
