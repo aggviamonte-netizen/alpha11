@@ -339,8 +339,14 @@ button {
 }
 
 .kick-body .drop-hint {
-  bottom: 96px;
-  top: auto;
+  bottom: auto;
+  top: 43%;
+  letter-spacing: 0.16em;
+  font-size: 13px;
+}
+
+.kick-body .toca-sub {
+  letter-spacing: 0.06em;
 }
 
 .canon-row {

@@ -176,16 +176,16 @@ export class KickScene extends Phaser.Scene {
       .setDepth(30)
       .setAlpha(0);
     this.powerLbl = this.add
-      .text(W / 2, METER.y - 16, 'POTENCIA', {
+      .text(METER.x + 8, METER.y - 12, 'POTENCIA', {
         fontFamily: UI_FONT,
         fontSize: '11px',
         color: '#7CFFB2',
         fontStyle: 'bold',
       })
-      .setOrigin(0.5)
+      .setOrigin(0, 0.5)
       .setDepth(25)
       .setAlpha(0)
-      .setLetterSpacing(3);
+      .setLetterSpacing(2);
 
     this.ball = drawLabBall(this, SPOT.x, SPOT.y);
     this.arrow = drawAimArrow(this);

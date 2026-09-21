@@ -14,7 +14,7 @@ export const GOAL = {
 export const SPOT = { x: W * 0.5, y: 608 };
 export const KICKER_POS = { x: W * 0.5 + 62, y: 698 };
 export const KEEPER_HOME = { x: W * 0.5, y: 292 };
-export const METER = { x: 28, y: 732, w: W - 56, h: 24 };
+export const METER = { x: 28, y: 750, w: W - 56, h: 22 };
 
 export function paintKickWorld(scene: Phaser.Scene): void {
   const g = scene.add.graphics().setDepth(0);
