@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { H, W } from '../game/layout';
+import { SWEET_MAX, SWEET_MIN } from './kickFeel';
 
 export const GOAL = {
   cx: W * 0.5,
@@ -13,6 +14,7 @@ export const GOAL = {
 export const SPOT = { x: W * 0.5, y: 608 };
 export const KICKER_POS = { x: W * 0.5 + 62, y: 698 };
 export const KEEPER_HOME = { x: W * 0.5, y: 292 };
+export const METER = { x: 28, y: 732, w: W - 56, h: 24 };
 
 export function paintKickWorld(scene: Phaser.Scene): void {
   const g = scene.add.graphics().setDepth(0);
@@ -129,18 +131,30 @@ export function paintGoal(scene: Phaser.Scene): void {
 
 export function drawLabBall(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Container {
   const root = scene.add.container(x, y).setDepth(22);
-  const glow = scene.add.circle(0, 0, 22, 0xe8ff47, 0.26);
-  const shade = scene.add.circle(1, 3, 15, 0x2a2c22, 1);
+  const glow = scene.add.circle(0, 0, 22, 0xe8ff47, 0.22);
+  const shade = scene.add.circle(1.4, 3.2, 15, 0x2a2c22, 1);
   const body = scene.add.circle(0, 0, 15, 0xf4f1ea, 1);
   const g = scene.add.graphics();
-  g.lineStyle(2, 0x7cffb2, 0.9);
-  g.strokeCircle(0, 0, 10);
-  g.lineStyle(1.4, 0xff7a45, 0.6);
+  g.lineStyle(1.7, 0x0b0b0c, 0.88);
+  g.strokeCircle(0, 0, 14.2);
   g.beginPath();
-  g.arc(0, 0, 10, 0.4, 2.2);
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+    const px = Math.cos(a) * 5.6;
+    const py = Math.sin(a) * 5.6;
+    if (i === 0) g.moveTo(px, py);
+    else g.lineTo(px, py);
+  }
+  g.closePath();
   g.strokePath();
-  g.fillStyle(0x0b0b0c, 0.3);
-  g.fillCircle(0, 0, 2.8);
+  g.lineStyle(1.3, 0x7cffb2, 0.75);
+  g.strokeCircle(0, 0, 10);
+  g.lineStyle(1.2, 0xff7a45, 0.55);
+  g.beginPath();
+  g.arc(0, 0, 10, 0.45, 2.15);
+  g.strokePath();
+  g.fillStyle(0x0b0b0c, 0.55);
+  g.fillCircle(0, 0, 2.4);
   const hi = scene.add.ellipse(-5, -6, 8, 4.5, 0xffffff, 0.55);
   root.add([glow, shade, body, g, hi]);
   return root;
@@ -163,6 +177,10 @@ export function renderAimArrow(
   const ex = x + Math.sin(angle) * len;
   const ey = y - Math.cos(angle) * len * (0.74 + height * 0.2);
   const color = hot ? 0xe8ff47 : 0x7cffb2;
+  if (hot) {
+    g.lineStyle(18, color, 0.12);
+    g.lineBetween(x, y, ex, ey);
+  }
   g.lineStyle(12, color, 0.16);
   g.lineBetween(x, y, ex, ey);
   g.lineStyle(5, color, 0.98);
@@ -173,6 +191,8 @@ export function renderAimArrow(
   const py = nx;
   g.fillStyle(color, 1);
   g.fillTriangle(ex + nx * 16, ey + ny * 16, ex + px * 10, ey + py * 10, ex - px * 10, ey - py * 10);
+  g.fillStyle(color, 0.55);
+  g.fillCircle(x, y, 5);
 }
 
 export function drawPowerMeter(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
@@ -180,22 +200,31 @@ export function drawPowerMeter(scene: Phaser.Scene): Phaser.GameObjects.Graphics
 }
 
 export function renderPowerMeter(g: Phaser.GameObjects.Graphics, power: number, sweet: boolean): void {
-  const x = 36;
-  const y = 746;
-  const w = W - 72;
-  const h = 18;
+  const { x, y, w, h } = METER;
   g.clear();
-  g.fillStyle(0x0b0b0c, 0.62);
-  g.fillRoundedRect(x - 5, y - 5, w + 10, h + 10, 12);
-  g.fillStyle(0x1a1e18, 1);
-  g.fillRoundedRect(x, y, w, h, 9);
-  g.fillStyle(0x7cffb2, 0.22);
-  g.fillRoundedRect(x + w * 0.54, y + 2, w * 0.32, h - 4, 7);
+  g.fillStyle(0x0b0b0c, 0.72);
+  g.fillRoundedRect(x - 6, y - 6, w + 12, h + 12, 14);
+  g.fillStyle(0x141814, 1);
+  g.fillRoundedRect(x, y, w, h, 11);
+  const sweetX = x + 2 + (w - 4) * SWEET_MIN;
+  const sweetW = (w - 4) * (SWEET_MAX - SWEET_MIN);
+  g.fillStyle(0x7cffb2, sweet ? 0.38 : 0.22);
+  g.fillRoundedRect(sweetX, y + 3, sweetW, h - 6, 8);
   const fill = Math.max(0.05, Math.min(1, power));
   g.fillStyle(sweet ? 0xe8ff47 : 0xff7a45, 0.96);
-  g.fillRoundedRect(x + 2, y + 2, (w - 4) * fill, h - 4, 7);
-  g.fillStyle(0xffffff, 0.45);
-  g.fillCircle(x + 2 + (w - 4) * fill, y + h / 2, 6);
+  g.fillRoundedRect(x + 2, y + 3, (w - 4) * fill, h - 6, 8);
+  g.lineStyle(2, 0xe8ff47, sweet ? 0.9 : 0.55);
+  g.lineBetween(sweetX, y + 2, sweetX, y + h - 2);
+  g.lineBetween(sweetX + sweetW, y + 2, sweetX + sweetW, y + h - 2);
+  const nx = x + 2 + (w - 4) * fill;
+  g.fillStyle(0x0b0b0c, 0.55);
+  g.fillCircle(nx, y + h / 2, 8);
+  g.fillStyle(0xffffff, 0.95);
+  g.fillCircle(nx, y + h / 2, 6);
+  if (sweet) {
+    g.fillStyle(0xe8ff47, 0.55);
+    g.fillCircle(nx, y + h / 2, 3);
+  }
 }
 
 export function drawReticle(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
@@ -205,16 +234,18 @@ export function drawReticle(scene: Phaser.Scene): Phaser.GameObjects.Graphics {
 export function renderReticle(g: Phaser.GameObjects.Graphics, x: number, y: number, valid: boolean): void {
   g.clear();
   const color = valid ? 0xe8ff47 : 0xff8bd1;
-  g.fillStyle(color, 0.12);
-  g.fillCircle(x, y, 16);
+  g.fillStyle(color, 0.14);
+  g.fillCircle(x, y, 18);
   g.lineStyle(3, color, 0.95);
-  g.strokeCircle(x, y, 13);
-  g.lineStyle(2, color, 0.5);
-  g.strokeCircle(x, y, 22);
-  g.lineBetween(x - 20, y, x - 8, y);
-  g.lineBetween(x + 8, y, x + 20, y);
-  g.lineBetween(x, y - 20, x, y - 8);
-  g.lineBetween(x, y + 8, x, y + 20);
+  g.strokeCircle(x, y, 14);
+  g.lineStyle(2, color, 0.45);
+  g.strokeCircle(x, y, 24);
+  g.lineBetween(x - 22, y, x - 9, y);
+  g.lineBetween(x + 9, y, x + 22, y);
+  g.lineBetween(x, y - 22, x, y - 9);
+  g.lineBetween(x, y + 9, x, y + 22);
+  g.fillStyle(color, 0.9);
+  g.fillCircle(x, y, 2.4);
 }
 
 export function addKeeperGloves(
