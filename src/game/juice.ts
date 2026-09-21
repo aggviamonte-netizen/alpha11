@@ -126,3 +126,19 @@ export function squashTo(
     ease: 'Sine.out',
   });
 }
+
+const HIT_STOP_KEY = '__juiceHitStop';
+
+/** Brief world freeze. Uses wall-clock so nested calls don't unpause early. */
+export function hitStop(scene: Phaser.Scene, ms: number, scale = 0.1): void {
+  const next = ((scene.data.get(HIT_STOP_KEY) as number | undefined) ?? 0) + 1;
+  scene.data.set(HIT_STOP_KEY, next);
+  scene.tweens.timeScale = scale;
+  scene.time.timeScale = scale;
+  window.setTimeout(() => {
+    if (scene.data.get(HIT_STOP_KEY) !== next) return;
+    if (!scene.sys.isActive()) return;
+    scene.tweens.timeScale = 1;
+    scene.time.timeScale = 1;
+  }, ms);
+}

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { el } from '../game/dom';
-import { burstDots, pulseRing, screenWash, squashTo, UI_FONT } from '../game/juice';
+import { burstDots, floatLabel, hitStop, pulseRing, screenWash, squashTo, UI_FONT } from '../game/juice';
 import { W } from '../game/layout';
 import { sfxOver, unlockSfx } from '../game/sfx';
 import {
@@ -11,6 +11,7 @@ import {
   GOAL,
   KEEPER_HOME,
   KICKER_POS,
+  METER,
   paintKickWorld,
   renderAimArrow,
   renderPowerMeter,
@@ -18,8 +19,26 @@ import {
   SPOT,
 } from './kickArt';
 import { drawKeeper, drawKicker, KICK_CHIP } from './drawKickCast';
+import {
+  goalBanner,
+  isStreakMilestone,
+  isSweetPower,
+  shotHeightBias,
+  shotScatter,
+  streakWhisper,
+} from './kickFeel';
 import { isNewKickRecord, loadKickBest, saveKickBest } from './kickScore';
-import { sfxGoal, sfxKick, sfxPost, sfxSave, sfxWhistle, sfxWide, unlockKickSfx } from './kickSfx';
+import {
+  sfxDive,
+  sfxGoal,
+  sfxKick,
+  sfxPost,
+  sfxSave,
+  sfxStreak,
+  sfxWhistle,
+  sfxWide,
+  unlockKickSfx,
+} from './kickSfx';
 
 type Phase = 'start' | 'ready' | 'flying' | 'hold' | 'over';
 type Outcome = 'goal' | 'save' | 'wide' | 'post';
@@ -86,11 +105,13 @@ export class KickScene extends Phaser.Scene {
   private aimHeight = 0.48;
   private power = 0.5;
   private dragging = false;
+  private aimHeld = false;
   private tellClock = 0;
   private diveZone: Zone = ZONES[2];
   private shownZone: Zone = ZONES[2];
   private fake = false;
   private liveAt = 0;
+  private keys = { l: false, r: false, u: false, d: false };
   private kicker!: Phaser.GameObjects.Container;
   private keeper!: Phaser.GameObjects.Container;
   private gloves!: { left: Phaser.GameObjects.Container; right: Phaser.GameObjects.Container };
@@ -119,8 +140,12 @@ export class KickScene extends Phaser.Scene {
     this.aimHeight = 0.48;
     this.power = 0.5;
     this.dragging = false;
+    this.aimHeld = false;
+    this.keys = { l: false, r: false, u: false, d: false };
     this.liveAt = 0;
     this.motes = [];
+    this.tweens.timeScale = 1;
+    this.time.timeScale = 1;
 
     paintKickWorld(this);
     this.spawnMotes();
@@ -151,16 +176,16 @@ export class KickScene extends Phaser.Scene {
       .setDepth(30)
       .setAlpha(0);
     this.powerLbl = this.add
-      .text(W / 2, 732, 'POTENCIA', {
+      .text(METER.x + 8, METER.y - 12, 'POTENCIA', {
         fontFamily: UI_FONT,
-        fontSize: '10px',
+        fontSize: '11px',
         color: '#7CFFB2',
         fontStyle: 'bold',
       })
-      .setOrigin(0.5)
+      .setOrigin(0, 0.5)
       .setDepth(25)
       .setAlpha(0)
-      .setLetterSpacing(3);
+      .setLetterSpacing(2);
 
     this.ball = drawLabBall(this, SPOT.x, SPOT.y);
     this.arrow = drawAimArrow(this);
@@ -170,6 +195,7 @@ export class KickScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onDown(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => this.onUp(p));
+    this.bindKeys();
 
     el('overlay-over').hidden = true;
     el('retry').onclick = () => {
@@ -204,12 +230,8 @@ export class KickScene extends Phaser.Scene {
     }
 
     if (this.phase === 'ready') {
-      this.power = 0.5 + Math.sin(this.pulse * 3.35) * 0.46;
-      if (!this.dragging) {
-        const sway = 0.46 - Math.min(0.16, this.score * 0.018);
-        this.aimAngle = Math.sin(this.pulse * 1.35) * sway;
-        this.aimHeight = 0.46 + Math.sin(this.pulse * 0.95 + 0.4) * 0.2;
-      }
+      this.power = 0.5 + Math.sin(this.pulse * 2.85) * 0.46;
+      this.steerAim(s);
       this.tellClock += s;
       this.applyKeeperTell();
       this.idleActors();
@@ -218,6 +240,57 @@ export class KickScene extends Phaser.Scene {
     }
 
     this.idleActors();
+  }
+
+  private bindKeys(): void {
+    const kb = this.input.keyboard;
+    if (!kb) return;
+    kb.on('keydown', (e: KeyboardEvent) => this.onKey(e, true));
+    kb.on('keyup', (e: KeyboardEvent) => this.onKey(e, false));
+  }
+
+  private onKey(e: KeyboardEvent, down: boolean): void {
+    const code = e.code;
+    if (code === 'ArrowLeft' || code === 'KeyA') this.keys.l = down;
+    if (code === 'ArrowRight' || code === 'KeyD') this.keys.r = down;
+    if (code === 'ArrowUp' || code === 'KeyW') this.keys.u = down;
+    if (code === 'ArrowDown' || code === 'KeyS') this.keys.d = down;
+    if (
+      code === 'ArrowLeft' ||
+      code === 'ArrowRight' ||
+      code === 'ArrowUp' ||
+      code === 'ArrowDown' ||
+      code === 'Space'
+    ) {
+      e.preventDefault();
+    }
+    if (this.phase === 'ready' && (this.keys.l || this.keys.r || this.keys.u || this.keys.d)) {
+      this.aimHeld = true;
+    }
+    if (!down) return;
+    if (code !== 'Space' && code !== 'Enter') return;
+    if (this.phase === 'start') this.beginPlay();
+    else if (this.phase === 'ready' && this.time.now >= this.liveAt) this.shoot();
+  }
+
+  private steerAim(s: number): void {
+    const usingKeys = this.keys.l || this.keys.r || this.keys.u || this.keys.d;
+    if (this.dragging || usingKeys) {
+      if (usingKeys && !this.dragging) {
+        const turn = 1.55 * s;
+        if (this.keys.l) this.aimAngle -= turn;
+        if (this.keys.r) this.aimAngle += turn;
+        if (this.keys.u) this.aimHeight += 0.9 * s;
+        if (this.keys.d) this.aimHeight -= 0.9 * s;
+        this.aimAngle = clamp(this.aimAngle, -MAX_ANGLE, MAX_ANGLE);
+        this.aimHeight = clamp(this.aimHeight, -0.05, 1.18);
+      }
+      return;
+    }
+    if (this.aimHeld) return;
+    const sway = 0.46 - Math.min(0.16, this.score * 0.018);
+    this.aimAngle = Math.sin(this.pulse * 1.35) * sway;
+    this.aimHeight = 0.46 + Math.sin(this.pulse * 0.95 + 0.4) * 0.2;
   }
 
   private beginPlay(): void {
@@ -241,6 +314,7 @@ export class KickScene extends Phaser.Scene {
     unlockKickSfx();
     if (this.phase !== 'ready' || this.time.now < this.liveAt) return;
     this.dragging = true;
+    this.aimHeld = true;
     this.pointAim(p);
   }
 
@@ -268,20 +342,24 @@ export class KickScene extends Phaser.Scene {
     this.arrow.clear();
     this.meter.clear();
     this.reticle.clear();
+    this.powerLbl.setAlpha(0);
     const hint = document.getElementById('drop-hint');
     if (hint) hint.hidden = true;
 
-    const sweet = this.power > 0.55 && this.power < 0.86;
-    const scatter = sweet ? 4 : 10 + (1 - this.power) * 16;
-    const raw = targetFromAim(this.aimAngle, this.aimHeight);
+    const sweet = isSweetPower(this.power);
+    const scatter = shotScatter(this.power);
+    const raw = targetFromAim(this.aimAngle, this.aimHeight + shotHeightBias(this.power));
     const target = {
       x: raw.x + (Math.random() - 0.5) * scatter,
       y: raw.y + (Math.random() - 0.5) * scatter * 0.7,
     };
 
     sfxKick();
-    this.cameras.main.shake(90, 0.006);
-    squashTo(this, this.kicker, 1.22, 0.7, 160);
+    hitStop(this, sweet ? 48 : 36, 0.08);
+    this.cameras.main.shake(sweet ? 120 : 90, sweet ? 0.008 : 0.006);
+    squashTo(this, this.kicker, 1.28, 0.66, 180);
+    squashTo(this, this.ball, 1.18, 0.72, 140);
+    this.kicker.setRotation(-0.18);
     this.tweens.add({
       targets: this.kicker,
       x: SPOT.x + 18,
@@ -289,7 +367,9 @@ export class KickScene extends Phaser.Scene {
       yoyo: true,
       ease: 'Quad.out',
     });
-    burstDots(this, SPOT.x, SPOT.y, 0xe8ff47, 8);
+    burstDots(this, SPOT.x, SPOT.y, 0xe8ff47, 10);
+    burstDots(this, SPOT.x - 8, SPOT.y + 6, 0xff7a45, 6);
+    pulseRing(this, SPOT.x, SPOT.y, sweet ? 0xe8ff47 : 0xff7a45, 10, 2.2);
 
     const flight = 540 - this.power * 200;
     const startX = this.ball.x;
@@ -314,7 +394,7 @@ export class KickScene extends Phaser.Scene {
         this.ballShadow.setPosition(mix(startX, target.x, t), mix(SPOT.y + 14, GOAL.lineY + 2, t));
         this.ballShadow.setScale(1 - t * 0.35, 1 - t * 0.2);
         this.ballShadow.setAlpha(0.26 - t * 0.1);
-        if (t > 0.16 && t < 0.9) this.spawnTrail(x, y);
+        if (t > 0.16 && t < 0.9) this.spawnTrail(x, y, sweet);
       },
       onComplete: () => this.resolveShot(target),
     });
@@ -322,27 +402,45 @@ export class KickScene extends Phaser.Scene {
 
   private diveKeeper(): void {
     if (this.phase !== 'flying') return;
-    const dest = zonePoint(this.diveZone);
-    const reach = 0.72 + Math.min(0.18, this.score * 0.02);
-    const x = mix(KEEPER_HOME.x, dest.x, reach);
-    const y = mix(KEEPER_HOME.y, dest.y + 8, reach * 0.85);
-    this.tweens.killTweensOf(this.keeper);
-    this.tweens.add({
-      targets: this.keeper,
-      x,
-      y,
-      duration: 180,
-      ease: 'Back.out',
+    sfxDive();
+    squashTo(this, this.keeper, 0.78, 1.22, 80);
+    this.time.delayedCall(48, () => {
+      if (this.phase !== 'flying') return;
+      const dest = zonePoint(this.diveZone);
+      const reach = 0.72 + Math.min(0.18, this.score * 0.02);
+      const x = mix(KEEPER_HOME.x, dest.x, reach);
+      const y = mix(KEEPER_HOME.y, dest.y + 8, reach * 0.85);
+      this.tweens.killTweensOf(this.keeper);
+      this.tweens.add({
+        targets: this.keeper,
+        x,
+        y,
+        duration: 170,
+        ease: 'Cubic.out',
+      });
+      this.tweens.add({
+        targets: this.keeperShadow,
+        x,
+        duration: 170,
+      });
+      this.keeper.setRotation(this.diveZone.x * 0.62);
+      this.keeper.setScale(1.38, 0.64);
+      this.tweens.add({
+        targets: this.keeper,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 220,
+        ease: 'Sine.out',
+      });
+      if (Math.abs(this.diveZone.x) < 0.2) {
+        this.gloves.left.setScale(1.18, 1.32);
+        this.gloves.right.setScale(1.18, 1.32);
+      } else {
+        const stretch = this.diveZone.x < 0 ? this.gloves.left : this.gloves.right;
+        stretch.setScale(1.55, 1.28);
+      }
+      burstDots(this, mix(KEEPER_HOME.x, x, 0.4), GOAL.lineY - 2, 0xff7a45, 6);
     });
-    this.tweens.add({
-      targets: this.keeperShadow,
-      x,
-      duration: 180,
-    });
-    this.keeper.setRotation(this.diveZone.x * 0.42);
-    squashTo(this, this.keeper, 1.28, 0.72, 200);
-    const stretch = this.diveZone.x < 0 ? this.gloves.left : this.gloves.right;
-    stretch.setScale(1.35, 1.2);
   }
 
   private resolveShot(target: { x: number; y: number }): void {
@@ -385,11 +483,12 @@ export class KickScene extends Phaser.Scene {
     this.best = Math.max(this.prevBest, this.score);
     this.syncHud();
     sfxGoal();
+    hitStop(this, 56, 0.1);
     burstDots(this, x, y, 0xe8ff47, 12);
     burstDots(this, x, y - 16, 0x7cffb2, 8);
     pulseRing(this, x, y, 0xe8ff47, 12, 3.2);
     screenWash(this, 0xe8ff47, 0.16, 240);
-    this.cameras.main.shake(160, 0.01);
+    this.cameras.main.shake(170, 0.011);
     this.netRipple(x, y);
     this.tweens.add({
       targets: this.ball,
@@ -398,7 +497,18 @@ export class KickScene extends Phaser.Scene {
       duration: 180,
       ease: 'Quad.out',
     });
-    this.popBanner('¡GOL!', '#E8FF47');
+    this.popBanner(goalBanner(this.score), '#E8FF47');
+    if (isStreakMilestone(this.score)) {
+      sfxStreak();
+      floatLabel(this, W / 2, 448, streakWhisper(this.score), {
+        color: '#7CFFB2',
+        size: '15px',
+        lift: 32,
+      });
+      screenWash(this, 0x7cffb2, 0.14, 320);
+      this.cameras.main.shake(220, 0.014);
+      pulseRing(this, GOAL.cx, mix(GOAL.barY, GOAL.lineY, 0.5), 0xe8ff47, 28, 2.6);
+    }
     this.time.delayedCall(1280, () => {
       if (this.phase !== 'hold') return;
       this.phase = 'ready';
@@ -410,19 +520,23 @@ export class KickScene extends Phaser.Scene {
   private onMiss(kind: Outcome, x: number, y: number): void {
     this.phase = 'over';
     this.syncHud();
-    this.cameras.main.shake(200, 0.014);
 
     if (kind === 'save') {
       sfxSave();
-      squashTo(this, this.keeper, 0.78, 1.18, 180);
+      hitStop(this, 72, 0.08);
+      this.cameras.main.shake(180, 0.013);
+      squashTo(this, this.keeper, 0.74, 1.22, 200);
       this.ball.setPosition(this.keeper.x + this.diveZone.x * 10, this.keeper.y - 8);
       this.popBanner('¡PARA!', '#6EE7FF');
       burstDots(this, this.ball.x, this.ball.y, 0x6ee7ff, 10);
       screenWash(this, 0x6ee7ff, 0.16, 320);
     } else if (kind === 'post') {
       sfxPost();
+      hitStop(this, 80, 0.07);
+      this.cameras.main.shake(240, 0.018);
       this.popBanner('¡PALO!', '#FF7A45');
       burstDots(this, x, y, 0xff7a45, 10);
+      pulseRing(this, x, y, 0xff7a45, 8, 2.8);
       screenWash(this, 0xff7a45, 0.16, 300);
       this.tweens.add({
         targets: this.ball,
@@ -433,6 +547,7 @@ export class KickScene extends Phaser.Scene {
       });
     } else {
       sfxWide();
+      this.cameras.main.shake(120, 0.008);
       this.popBanner('¡FUERA!', '#FF8BD1');
       burstDots(this, x, y, 0xff8bd1, 8);
       screenWash(this, 0xff8bd1, 0.14, 300);
@@ -475,6 +590,7 @@ export class KickScene extends Phaser.Scene {
     this.ballShadow.setScale(1);
     this.ballShadow.setAlpha(0.26);
     this.dragging = false;
+    this.aimHeld = false;
     this.pickTell();
     if (announce && this.phase === 'ready') {
       sfxWhistle();
@@ -503,13 +619,13 @@ export class KickScene extends Phaser.Scene {
     const twitch = this.fake && this.tellClock > 0.55 ? Math.sin(this.tellClock * 22) * 4 : 0;
     this.keeper.x = KEEPER_HOME.x + lean + twitch;
     this.keeper.y = KEEPER_HOME.y + bob - z.y * 8;
-    this.keeper.setRotation(z.x * 0.22);
+    this.keeper.setRotation(z.x * 0.28);
     this.keeperShadow.x = this.keeper.x;
-    this.gloves.left.setScale(z.x < 0 ? 1.4 : 0.9, z.y > 0.6 ? 1.22 : 1);
-    this.gloves.right.setScale(z.x > 0 ? 1.4 : 0.9, z.y > 0.6 ? 1.22 : 1);
+    this.gloves.left.setScale(z.x < 0 ? 1.48 : 0.92, z.y > 0.6 ? 1.28 : 1);
+    this.gloves.right.setScale(z.x > 0 ? 1.48 : 0.92, z.y > 0.6 ? 1.28 : 1);
     if (z.y > 0.65) {
-      this.gloves.left.y = -14;
-      this.gloves.right.y = -14;
+      this.gloves.left.y = -16;
+      this.gloves.right.y = -16;
     } else {
       this.gloves.left.y = -2;
       this.gloves.right.y = -2;
@@ -520,18 +636,23 @@ export class KickScene extends Phaser.Scene {
   private drawTellMark(z: { x: number; y: number }): void {
     const g = this.tellMark;
     g.clear();
+    const laneX = mix(GOAL.innerL + 22, GOAL.innerR - 22, (z.x + 1) / 2);
+    const laneW = 54;
+    const flicker = this.fake && this.tellClock > 0.55 ? 0.06 + Math.abs(Math.sin(this.tellClock * 18)) * 0.1 : 0.12;
+    g.fillStyle(0xff7a45, flicker);
+    g.fillRoundedRect(laneX - laneW / 2, GOAL.barY + 6, laneW, GOAL.lineY - GOAL.barY - 14, 8);
     const x = KEEPER_HOME.x + z.x * 48;
     const y = GOAL.lineY + 10;
     const color = 0xff7a45;
-    g.fillStyle(color, 0.85);
+    g.fillStyle(color, 0.92);
     if (Math.abs(z.x) < 0.2) {
-      g.fillTriangle(x, y - 10, x - 8, y + 6, x + 8, y + 6);
+      g.fillTriangle(x, y - 12, x - 9, y + 7, x + 9, y + 7);
     } else {
       const dir = Math.sign(z.x);
-      g.fillTriangle(x + dir * 12, y, x - dir * 6, y - 9, x - dir * 6, y + 9);
+      g.fillTriangle(x + dir * 14, y, x - dir * 7, y - 10, x - dir * 7, y + 10);
     }
-    g.fillStyle(color, 0.2);
-    g.fillCircle(this.keeper.x, GOAL.lineY + 4, 16);
+    g.fillStyle(color, 0.22);
+    g.fillCircle(this.keeper.x, GOAL.lineY + 4, 18);
   }
 
   private popBanner(text: string, color: string): void {
@@ -553,10 +674,13 @@ export class KickScene extends Phaser.Scene {
   }
 
   private drawGuides(): void {
-    const sweet = this.power > 0.55 && this.power < 0.86;
+    const sweet = isSweetPower(this.power);
     renderAimArrow(this.arrow, SPOT.x, SPOT.y, this.aimAngle, this.aimHeight, sweet);
     renderPowerMeter(this.meter, this.power, sweet);
-    this.powerLbl.setAlpha(0.85).setColor(sweet ? '#E8FF47' : '#FF7A45');
+    this.powerLbl
+      .setAlpha(sweet ? 1 : 0.88)
+      .setColor(sweet ? '#E8FF47' : '#FF7A45')
+      .setText(sweet ? '¡AHÍ!' : 'POTENCIA');
     const ghost = targetFromAim(this.aimAngle, this.aimHeight);
     renderReticle(this.reticle, ghost.x, ghost.y, insideGoal(ghost.x, ghost.y, 2));
   }
@@ -574,8 +698,9 @@ export class KickScene extends Phaser.Scene {
     }
   }
 
-  private spawnTrail(x: number, y: number): void {
-    const dot = this.add.circle(x, y, 3.2, 0xe8ff47, 0.4).setDepth(18);
+  private spawnTrail(x: number, y: number, sweet: boolean): void {
+    const color = sweet ? 0xe8ff47 : 0xff7a45;
+    const dot = this.add.circle(x, y, sweet ? 3.4 : 2.8, color, 0.42).setDepth(18);
     this.tweens.add({
       targets: dot,
       alpha: 0,

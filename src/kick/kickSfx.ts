@@ -84,32 +84,44 @@ export function sfxWhistle(): void {
 }
 
 export function sfxKick(): void {
-  tone(96, 0.09, 'sine', 0.055, 0, -30);
-  rustle(0.07, 0.034, 0, 180, 900);
-  tone(210, 0.05, 'triangle', 0.02, 0.02, 40);
+  tone(78, 0.11, 'sine', 0.07, 0, -36);
+  rustle(0.08, 0.042, 0, 140, 800);
+  tone(220, 0.045, 'triangle', 0.024, 0.018, 50);
+  tone(340, 0.03, 'sine', 0.016, 0.03, 80);
 }
 
 export function sfxGoal(): void {
-  tone(392, 0.07, 'triangle', 0.038);
-  tone(523, 0.08, 'sine', 0.034, 0.05);
-  tone(659, 0.1, 'sine', 0.03, 0.1);
-  tone(784, 0.16, 'sine', 0.026, 0.16, 30);
-  rustle(0.12, 0.018, 0.04, 700, 2800);
+  tone(392, 0.07, 'triangle', 0.04);
+  tone(523, 0.08, 'sine', 0.036, 0.05);
+  tone(659, 0.1, 'sine', 0.032, 0.1);
+  tone(784, 0.18, 'sine', 0.028, 0.16, 30);
+  rustle(0.14, 0.022, 0.04, 700, 2800);
 }
 
 export function sfxSave(): void {
-  tone(140, 0.1, 'sine', 0.048, 0, -40);
-  rustle(0.09, 0.04, 0, 90, 700);
-  tone(90, 0.12, 'triangle', 0.02, 0.04, -20);
+  tone(140, 0.1, 'sine', 0.052, 0, -40);
+  rustle(0.1, 0.046, 0, 90, 700);
+  tone(90, 0.14, 'triangle', 0.024, 0.04, -20);
 }
 
 export function sfxPost(): void {
-  tone(640, 0.05, 'square', 0.028);
-  tone(880, 0.08, 'triangle', 0.02, 0.03, -120);
-  rustle(0.06, 0.03, 0, 400, 2200);
+  tone(640, 0.05, 'square', 0.032);
+  tone(880, 0.09, 'triangle', 0.024, 0.028, -120);
+  rustle(0.07, 0.034, 0, 400, 2200);
 }
 
 export function sfxWide(): void {
   tone(196, 0.1, 'sine', 0.03, 0, -50);
   tone(148, 0.14, 'triangle', 0.022, 0.06, -30);
+}
+
+export function sfxDive(): void {
+  rustle(0.09, 0.03, 0, 180, 1100);
+  tone(168, 0.07, 'sine', 0.022, 0, -50);
+}
+
+export function sfxStreak(): void {
+  tone(523, 0.07, 'sine', 0.03, 0.08);
+  tone(659, 0.08, 'sine', 0.028, 0.14);
+  tone(784, 0.16, 'triangle', 0.024, 0.2, 40);
 }
