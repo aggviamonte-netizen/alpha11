@@ -52,7 +52,7 @@ export function floatLabel(
   x: number,
   y: number,
   text: string,
-  opts: { color?: string; size?: string; lift?: number } = {},
+  opts: { color?: string; size?: string; lift?: number; duration?: number } = {},
 ): void {
   const t = scene.add
     .text(x, y, text, {
@@ -71,7 +71,7 @@ export function floatLabel(
     y: y - (opts.lift ?? 40),
     alpha: 0,
     scale: 1.08,
-    duration: 640,
+    duration: opts.duration ?? 640,
     ease: 'Quad.out',
     onComplete: () => t.destroy(),
   });

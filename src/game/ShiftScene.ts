@@ -1,8 +1,25 @@
 import Phaser from 'phaser';
 import { el } from './dom';
 import { burstDots, floatLabel, screenWash } from './juice';
-import { sfxMerge, sfxOver, sfxSlide, sfxWin, unlockSfx } from './sfx';
+import { sfxCore, sfxMerge, sfxOver, sfxSlide, sfxWin, unlockSfx } from './sfx';
 import { drawShiftPiece, shiftPiece } from './shiftPieces';
+import {
+  HIT_PAUSE_MS,
+  SLIDE_MS,
+  comboBanner,
+  comboWhisper,
+  impactShake,
+  impactZoom,
+  isMergeStreak,
+  mergeAccentCount,
+  mergeBurstCount,
+  mergeImpact,
+  mergePunchScale,
+  nextMergeStreak,
+  streakBanner,
+  streakWhisper,
+  tierCeremony,
+} from './shiftFeel';
 import { loadShiftBest, resetShiftScore, saveShiftScore, shiftMergePoints } from './shiftScore';
 import { paintLabBackdrop } from './labBackdrop';
 
@@ -17,7 +34,6 @@ const ORIGIN_X = (W - BOARD) / 2;
 const ORIGIN_Y = 214;
 const TILE_R = 30;
 const SWIPE = 28;
-const SLIDE_MS = 118;
 
 type Phase = 'start' | 'play' | 'over' | 'win';
 type Dir = 'L' | 'R' | 'U' | 'D';
@@ -58,6 +74,9 @@ export class ShiftScene extends Phaser.Scene {
   private busy = false;
   private won = false;
   private swipe: { x: number; y: number } | null = null;
+  private queued: Dir | null = null;
+  private mergeStreak = 0;
+  private celebrated = new Set<number>();
   private boardGlow!: Phaser.GameObjects.Graphics;
 
   constructor() {
@@ -74,16 +93,21 @@ export class ShiftScene extends Phaser.Scene {
     this.busy = false;
     this.won = false;
     this.swipe = null;
+    this.queued = null;
+    this.mergeStreak = 0;
+    this.celebrated.clear();
+    this.cameras.main.resetFX();
+    this.cameras.main.setZoom(1);
 
     this.paintBoard();
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       unlockSfx();
-      if (this.phase !== 'play' || this.busy) return;
+      if (this.phase !== 'play') return;
       this.swipe = { x: p.x, y: p.y };
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (!this.swipe || this.phase !== 'play' || this.busy) {
+      if (!this.swipe || this.phase !== 'play') {
         this.swipe = null;
         return;
       }
@@ -200,24 +224,31 @@ export class ShiftScene extends Phaser.Scene {
   }
 
   private tryMove(dir: Dir): void {
-    if (this.phase !== 'play' || this.busy) return;
+    if (this.phase !== 'play') return;
+    if (this.busy) {
+      this.queued = dir;
+      return;
+    }
     const before = this.snapshot();
     const gained = this.apply(dir);
     if (this.snapshot() === before) return;
 
-    const merges = this.tiles.filter((t) => t.merged && !t.dead).length;
+    const mergedTiles = this.tiles.filter((t) => t.merged && !t.dead);
+    const merges = mergedTiles.length;
+    const maxTier = mergedTiles.reduce((m, t) => Math.max(m, t.tier), 0);
+    this.mergeStreak = nextMergeStreak(this.mergeStreak, merges);
     this.score += gained;
     saveShiftScore(this.score);
     this.best = loadShiftBest();
     this.syncHud();
     sfxSlide();
     if (merges) {
-      sfxMerge(merges > 1);
+      sfxMerge(merges > 1 || isMergeStreak(this.mergeStreak));
       this.flashBoard();
+      this.voice(merges);
     }
-    if (merges > 1) {
-      floatLabel(this, W / 2, ORIGIN_Y - 28, `COMBO ×${merges}`, { size: '18px' });
-    }
+    const impact = mergeImpact(maxTier, merges);
+    if (impact !== 'none') this.punchBoard(impact);
 
     this.busy = true;
     const run = (): void => {
@@ -227,21 +258,67 @@ export class ShiftScene extends Phaser.Scene {
         this.refreshSprites();
         this.busy = false;
         if (this.tiles.some((t) => t.tier >= 11) && !this.won) {
+          this.queued = null;
           this.win();
           return;
         }
-        if (!this.canMove()) this.gameOver();
+        if (!this.canMove()) {
+          this.queued = null;
+          this.gameOver();
+          return;
+        }
+        const next = this.queued;
+        this.queued = null;
+        if (next) this.tryMove(next);
       });
     };
     if (merges) {
       this.tweens.pauseAll();
-      this.time.delayedCall(32, () => {
+      this.time.delayedCall(HIT_PAUSE_MS, () => {
+        if (!this.sys.isActive()) return;
         this.tweens.resumeAll();
         run();
       });
     } else {
       run();
     }
+  }
+
+  private voice(merges: number): void {
+    const streakHit = isMergeStreak(this.mergeStreak);
+    const combo = comboBanner(merges);
+    const primary = combo ?? (streakHit ? streakBanner(this.mergeStreak) : null);
+    if (primary) {
+      floatLabel(this, W / 2, ORIGIN_Y - 32, primary, {
+        size: '20px',
+        color: combo ? '#E8FF47' : '#7CFFB2',
+        lift: 36,
+        duration: 900,
+      });
+    }
+    const whisper = streakHit ? streakWhisper(this.mergeStreak) : merges >= 3 ? comboWhisper(merges) : null;
+    if (whisper) {
+      floatLabel(this, W / 2, ORIGIN_Y - 4, whisper, {
+        size: '13px',
+        color: '#7CFFB2',
+        lift: 24,
+        duration: 860,
+      });
+    }
+  }
+
+  private punchBoard(impact: 'soft' | 'hard'): void {
+    const shake = impactShake(impact);
+    const zoom = impactZoom(impact);
+    if (shake) this.cameras.main.shake(shake.ms, shake.intensity);
+    this.tweens.killTweensOf(this.cameras.main);
+    this.cameras.main.setZoom(zoom);
+    this.tweens.add({
+      targets: this.cameras.main,
+      zoom: 1,
+      duration: shake?.ms ?? 120,
+      ease: 'Quad.out',
+    });
   }
 
   private snapshot(): string {
@@ -332,36 +409,63 @@ export class ShiftScene extends Phaser.Scene {
       const spr = this.sprites.get(t.id);
       if (!spr) continue;
       left += 1;
+      this.tweens.killTweensOf(spr);
       this.tweens.add({
         targets: spr,
         x: cellX(t.c),
         y: cellY(t.r),
         alpha: t.dead ? 0 : 1,
-        scale: t.merged ? 1.08 : t.dead ? 0.7 : 1,
+        scale: t.merged ? 1.12 : t.dead ? 0.7 : 1,
         duration: SLIDE_MS,
         ease: 'Cubic.easeOut',
         onComplete: () => {
-          if (t.merged && !t.dead) {
-            burstDots(this, cellX(t.c), cellY(t.r), shiftPiece(t.tier).color, 8);
-            floatLabel(this, cellX(t.c), cellY(t.r) - 8, `+${shiftMergePoints(t.tier)}`, {
-              size: '14px',
-              lift: 28,
-            });
-            spr.destroy(true);
-            this.sprites.delete(t.id);
-            this.makeSprite(t, false);
-            const born = this.sprites.get(t.id);
-            if (born) {
-              born.setScale(1.16);
-              this.tweens.add({ targets: born, scale: 1, duration: 110, ease: 'Back.out', onComplete: finish });
-              return;
-            }
-          }
+          if (t.merged && !t.dead) this.landMerge(t, spr);
           finish();
         },
       });
     }
     if (left === 0) done();
+  }
+
+  private landMerge(tile: Tile, spr: Phaser.GameObjects.Container): void {
+    const piece = shiftPiece(tile.tier);
+    const x = cellX(tile.c);
+    const y = cellY(tile.r);
+    burstDots(this, x, y, piece.color, mergeBurstCount(tile.tier));
+    const accent = mergeAccentCount(tile.tier);
+    if (accent) burstDots(this, x, y - 2, 0xf4f1ea, accent);
+    floatLabel(this, x, y - 8, `+${shiftMergePoints(tile.tier)}`, {
+      size: '14px',
+      lift: 28,
+    });
+    spr.destroy(true);
+    this.sprites.delete(tile.id);
+    this.makeSprite(tile, false);
+    const born = this.sprites.get(tile.id);
+    if (born) {
+      born.setScale(mergePunchScale(tile.tier));
+      this.tweens.add({
+        targets: born,
+        scale: 1,
+        duration: 130,
+        ease: 'Back.out',
+      });
+    }
+    this.celebrateTier(tile, piece.hex);
+  }
+
+  private celebrateTier(tile: Tile, color: string): void {
+    const ceremony = tierCeremony(tile.tier);
+    if (!ceremony || this.celebrated.has(tile.tier)) return;
+    this.celebrated.add(tile.tier);
+    floatLabel(this, W / 2, ORIGIN_Y + BOARD / 2, ceremony.label, {
+      size: '26px',
+      color,
+      lift: 52,
+      duration: 1100,
+    });
+    screenWash(this, ceremony.wash, ceremony.alpha, 320);
+    if (tile.tier < 11) sfxCore();
   }
 
   private purgeDead(): void {
@@ -399,13 +503,29 @@ export class ShiftScene extends Phaser.Scene {
   }
 
   private makeSprite(tile: Tile, pop: boolean): void {
-    const spr = drawShiftPiece(this, cellX(tile.c), cellY(tile.r), tile.tier, TILE_R);
+    const x = cellX(tile.c);
+    const y = cellY(tile.r);
+    const spr = drawShiftPiece(this, x, y, tile.tier, TILE_R);
     spr.setDepth(10);
     this.sprites.set(tile.id, spr);
-    if (pop) {
-      spr.setScale(0.18);
-      this.tweens.add({ targets: spr, scale: 1, duration: 160, ease: 'Back.easeOut' });
-    }
+    if (!pop) return;
+    const piece = shiftPiece(tile.tier);
+    spr.setScale(0);
+    const halo = this.add.circle(x, y, TILE_R * 0.55, piece.color, 0.45).setDepth(9);
+    this.tweens.add({
+      targets: halo,
+      scale: 2.2,
+      alpha: 0,
+      duration: 220,
+      ease: 'Quad.out',
+      onComplete: () => halo.destroy(),
+    });
+    this.tweens.add({
+      targets: spr,
+      scale: 1,
+      duration: 170,
+      ease: 'Back.out',
+    });
   }
 
   private refreshSprites(): void {
@@ -448,7 +568,11 @@ export class ShiftScene extends Phaser.Scene {
     const rec = document.getElementById('over-record');
     if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
     el('keep').hidden = false;
-    el('overlay-over').hidden = false;
+    el('overlay-over').hidden = true;
+    this.time.delayedCall(480, () => {
+      if (this.phase !== 'win') return;
+      el('overlay-over').hidden = false;
+    });
   }
 
   private resumeAfterWin(): void {
