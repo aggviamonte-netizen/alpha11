@@ -293,6 +293,7 @@ export class ShiftScene extends Phaser.Scene {
         size: '20px',
         color: combo ? '#E8FF47' : '#7CFFB2',
         lift: 36,
+        duration: 900,
       });
     }
     const whisper = streakHit ? streakWhisper(this.mergeStreak) : merges >= 3 ? comboWhisper(merges) : null;
@@ -301,6 +302,7 @@ export class ShiftScene extends Phaser.Scene {
         size: '13px',
         color: '#7CFFB2',
         lift: 24,
+        duration: 860,
       });
     }
   }
@@ -460,8 +462,9 @@ export class ShiftScene extends Phaser.Scene {
       size: '26px',
       color,
       lift: 52,
+      duration: 1100,
     });
-    screenWash(this, ceremony.wash, ceremony.alpha, 260);
+    screenWash(this, ceremony.wash, ceremony.alpha, 320);
     if (tile.tier < 11) sfxCore();
   }
 
