@@ -8,7 +8,7 @@
     "dev:worker": "npm run build && wrangler dev",
     "build": "wrangler types worker/worker-configuration.d.ts && tsc --noEmit && tsc --noEmit -p worker/tsconfig.json && vite build",
     "preview": "vite preview",
-    "test": "tsx --test worker/test/api.test.ts src/kick/kickScore.test.ts src/kick/kickFeel.test.ts src/game/shiftFeel.test.ts src/game/noVeggieLeak.test.ts",
+    "test": "tsx --test worker/test/api.test.ts src/kick/kickScore.test.ts src/kick/kickFeel.test.ts src/game/shiftFeel.test.ts src/game/jumpFeel.test.ts src/game/noVeggieLeak.test.ts",
     "test:api": "tsx --test worker/test/api.test.ts",
     "types:worker": "wrangler types worker/worker-configuration.d.ts",
     "deploy": "npm run build && wrangler deploy"
