@@ -12,14 +12,22 @@ const ROCK_LIT = 0x8a93a0;
 export type CraftRig = {
   root: Phaser.GameObjects.Container;
   glow: Phaser.GameObjects.Arc;
-  flame: Phaser.GameObjects.Ellipse;
+  plume: Phaser.GameObjects.Ellipse;
+  flameL: Phaser.GameObjects.Ellipse;
+  flameR: Phaser.GameObjects.Ellipse;
+  coreL: Phaser.GameObjects.Ellipse;
+  coreR: Phaser.GameObjects.Ellipse;
 };
 
 /** ALPHA-11 PULSO — angular steel/navy interceptor. Never a produce silhouette. */
 export function drawPulseCraft(scene: Phaser.Scene, x: number, y: number): CraftRig {
   const root = scene.add.container(x, y).setDepth(22);
   const glow = scene.add.circle(0, 10, 28, MID, 0.22);
-  const flame = scene.add.ellipse(0, 34, 8, 22, LIME, 0.95);
+  const plume = scene.add.ellipse(0, 40, 18, 20, LIME, 0.22);
+  const flameL = scene.add.ellipse(-7.5, 32, 5, 16, LIME, 0.95);
+  const flameR = scene.add.ellipse(7.5, 32, 5, 16, LIME, 0.95);
+  const coreL = scene.add.ellipse(-7.5, 28, 2.4, 9, 0xf4f1ea, 0.92);
+  const coreR = scene.add.ellipse(7.5, 28, 2.4, 9, 0xf4f1ea, 0.92);
 
   const g = scene.add.graphics();
   g.fillStyle(INK, 0.34);
@@ -105,16 +113,26 @@ export function drawPulseCraft(scene: Phaser.Scene, x: number, y: number): Craft
   g.lineStyle(1.5, LIME, 0.85);
   g.lineBetween(-6, 17, 6, 17);
 
-  root.add([glow, flame, g]);
-  return { root, glow, flame };
+  root.add([glow, plume, flameL, flameR, coreL, coreR, g]);
+  return { root, glow, plume, flameL, flameR, coreL, coreR };
 }
 
 export function poseCraft(rig: CraftRig, vx: number, pulse: number, thrusting: boolean): void {
-  rig.root.setRotation(Phaser.Math.Clamp(vx / 380, -0.38, 0.38));
-  const flicker = thrusting ? 0.72 + Math.sin(pulse * 38) * 0.28 : 0.22 + Math.sin(pulse * 8) * 0.08;
-  rig.flame.setScale(0.7 + flicker * 0.45, 0.85 + flicker * 0.55);
-  rig.flame.setAlpha(flicker);
-  rig.glow.setAlpha(0.14 + flicker * 0.12);
+  rig.root.setRotation(Phaser.Math.Clamp(vx / 420, -0.42, 0.42));
+  const flicker = thrusting ? 0.8 + Math.sin(pulse * 42) * 0.2 : 0.2 + Math.sin(pulse * 7) * 0.06;
+  const alt = Math.sin(pulse * 55);
+  const len = thrusting ? 0.85 + flicker * 0.55 : 0.35;
+  rig.flameL.setScale(0.75 + flicker * 0.2, len);
+  rig.flameR.setScale(0.75 + flicker * 0.2, len * (0.92 + alt * 0.08));
+  rig.flameL.setAlpha(flicker);
+  rig.flameR.setAlpha(flicker * 0.92);
+  rig.coreL.setScale(0.8, 0.7 + alt * 0.25);
+  rig.coreR.setScale(0.8, 0.7 - alt * 0.2);
+  rig.coreL.setAlpha(Math.min(1, flicker + 0.2));
+  rig.coreR.setAlpha(Math.min(1, flicker + 0.12));
+  rig.plume.setScale(0.85 + flicker * 0.55, 0.6 + flicker * 0.8);
+  rig.plume.setAlpha(thrusting ? 0.16 + flicker * 0.2 : 0.04);
+  rig.glow.setAlpha(0.12 + flicker * 0.18);
 }
 
 export function drawAsteroid(scene: Phaser.Scene, variant: number): Phaser.GameObjects.Container {
@@ -166,10 +184,33 @@ export function drawSentry(scene: Phaser.Scene, elite: boolean): Phaser.GameObje
   g.fillStyle(LIME, 0.95);
   g.fillTriangle(-16, 2, -8, -2, -8, 6);
   g.fillTriangle(16, 2, 8, -2, 8, 6);
+  g.fillStyle(LIME, elite ? 1 : 0.75);
+  g.fillRect(-3, 8, 6, 3);
   if (elite) {
+    g.lineStyle(1.6, LIME, 0.95);
+    g.strokeRect(-18, -16, 8, 5);
+    g.strokeRect(10, -16, 8, 5);
     g.fillStyle(LIME, 1);
     g.fillRect(-8, 8, 3, 3);
     g.fillRect(5, 8, 3, 3);
+  }
+  root.add(g);
+  return root;
+}
+
+/** Faceted plates left when a hull or rock breaks. Hard shards only — never produce. */
+export function drawWreck(scene: Phaser.Scene, hull: boolean): Phaser.GameObjects.Container {
+  const root = scene.add.container(0, 0);
+  const g = scene.add.graphics();
+  g.fillStyle(hull ? 0x6ee7ff : 0x8a93a0, 1);
+  g.fillRect(-11, -3, 9, 3);
+  g.fillRect(2, 3, 8, 3);
+  g.fillTriangle(-1, -11, 7, -1, 0, 3);
+  g.fillStyle(hull ? 0xe8ff47 : 0xf4f1ea, hull ? 0.95 : 0.35);
+  g.fillRect(-5, 0, 3, 3);
+  if (hull) {
+    g.fillStyle(0xff7a45, 0.9);
+    g.fillRect(4, -6, 3, 3);
   }
   root.add(g);
   return root;

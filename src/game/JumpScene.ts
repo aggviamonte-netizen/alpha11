@@ -1,7 +1,35 @@
 import Phaser from 'phaser';
 import { el } from './dom';
-import { drawAsteroid, drawBolt, drawPulseCraft, drawSentry, poseCraft, type CraftRig } from './drawCraft';
-import { burstDots, floatLabel, pulseRing, screenWash, squashTo } from './juice';
+import { drawAsteroid, drawBolt, drawPulseCraft, drawSentry, drawWreck, poseCraft, type CraftRig } from './drawCraft';
+import { burstDots, floatLabel, popScale, pulseRing, screenWash, squashTo } from './juice';
+import {
+  ASSIST_RANGE,
+  COMBO_WINDOW_MS,
+  FIRE_MS,
+  GRACE_MS,
+  GRAZE_COOLDOWN_MS,
+  STEER_RATE,
+  aimNudge,
+  eliteEntrance,
+  graceSaveBanner,
+  graceSaveWhisper,
+  impactShake,
+  impactZoom,
+  isNearMiss,
+  killAccentCount,
+  killBurstCount,
+  killColor,
+  killImpact,
+  killVoice,
+  momentWash,
+  nearMissBanner,
+  nearMissWhisper,
+  nextCombo,
+  scoreKill,
+  shotSquash,
+  surfaceGap,
+  type JumpImpact,
+} from './jumpFeel';
 import { loadJumpBest, saveJumpBest } from './jumpScore';
 import { sfxHit, sfxKill, sfxLand, sfxOver, sfxShot, unlockSfx } from './sfx';
 
@@ -12,8 +40,6 @@ const PAD = 28;
 const TOP = 86;
 const BOT = 78;
 const HIT = 9;
-const FIRE_MS = 108;
-const GRACE = 1100;
 
 type Phase = 'start' | 'play' | 'over';
 type FoeKind = 'rock' | 'big' | 'drone' | 'elite';
@@ -28,6 +54,7 @@ type Foe = {
   hp: number;
   spin: number;
   shotAt: number;
+  entered: boolean;
   root: Phaser.GameObjects.Container;
 };
 
@@ -50,11 +77,11 @@ function circleHit(ax: number, ay: number, ar: number, bx: number, by: number, b
   return dx * dx + dy * dy < rr * rr;
 }
 
-function foeStats(kind: FoeKind): { r: number; hp: number; pts: number } {
-  if (kind === 'rock') return { r: 13, hp: 1, pts: 8 };
-  if (kind === 'big') return { r: 21, hp: 2, pts: 16 };
-  if (kind === 'drone') return { r: 14, hp: 2, pts: 18 };
-  return { r: 16, hp: 3, pts: 32 };
+function foeStats(kind: FoeKind): { r: number; hp: number } {
+  if (kind === 'rock') return { r: 13, hp: 1 };
+  if (kind === 'big') return { r: 21, hp: 2 };
+  if (kind === 'drone') return { r: 14, hp: 2 };
+  return { r: 16, hp: 3 };
 }
 
 export class JumpScene extends Phaser.Scene {
@@ -77,11 +104,14 @@ export class JumpScene extends Phaser.Scene {
   private holdingFire = false;
   private lastShot = 0;
   private graceUntil = 0;
+  private graceSpoken = false;
+  private grazeUntil = 0;
+  private wasGraze = false;
+  private eliteSeen = false;
   private traveled = 0;
   private spawnT = 0;
   private pulse = 0;
   private lastTrail = 0;
-  private frozenUntil = 0;
   private keys = { l: false, r: false, u: false, d: false };
   private rig!: CraftRig;
   private foes: Foe[] = [];
@@ -111,12 +141,17 @@ export class JumpScene extends Phaser.Scene {
     this.holdingFire = false;
     this.lastShot = 0;
     this.graceUntil = 0;
+    this.graceSpoken = false;
+    this.grazeUntil = 0;
+    this.wasGraze = false;
+    this.eliteSeen = false;
     this.traveled = 0;
     this.spawnT = -1.15;
     this.pulse = 0;
     this.lastTrail = 0;
-    this.frozenUntil = 0;
     this.keys = { l: false, r: false, u: false, d: false };
+    this.cameras.main.resetFX();
+    this.cameras.main.setZoom(1);
     this.foes = [];
     this.bolts = [];
     this.stars = [];
@@ -157,11 +192,6 @@ export class JumpScene extends Phaser.Scene {
       return;
     }
 
-    if (this.time.now < this.frozenUntil) {
-      this.rig.root.setPosition(this.px, this.py);
-      return;
-    }
-
     this.steer(s);
     if (this.holdingFire) this.tryFire();
     this.tickBolts(s);
@@ -190,7 +220,11 @@ export class JumpScene extends Phaser.Scene {
     this.kills = 0;
     this.bonus = 0;
     this.traveled = 0;
-    this.graceUntil = this.time.now + GRACE;
+    this.graceUntil = this.time.now + GRACE_MS;
+    this.graceSpoken = false;
+    this.grazeUntil = 0;
+    this.wasGraze = false;
+    this.eliteSeen = false;
     this.syncHud();
     this.setFirePad(true);
     this.showHint();
@@ -278,8 +312,8 @@ export class JumpScene extends Phaser.Scene {
     this.aimY = Phaser.Math.Clamp(this.aimY, TOP, H - BOT);
 
     const prevX = this.px;
-    this.px += (this.aimX - this.px) * Math.min(1, 14 * s);
-    this.py += (this.aimY - this.py) * Math.min(1, 14 * s);
+    this.px += (this.aimX - this.px) * Math.min(1, STEER_RATE * s);
+    this.py += (this.aimY - this.py) * Math.min(1, STEER_RATE * s);
     this.vx = (this.px - prevX) / Math.max(s, 0.001);
     this.rig.root.setPosition(this.px, this.py);
     poseCraft(this.rig, this.vx, this.pulse, true);
@@ -289,12 +323,14 @@ export class JumpScene extends Phaser.Scene {
     if (this.phase !== 'play') return;
     if (this.time.now - this.lastShot < FIRE_MS) return;
     this.lastShot = this.time.now;
+    const nudge = this.laneNudge();
     this.spawnBolt(this.px - 9, this.py - 22, -560, false);
-    this.spawnBolt(this.px, this.py - 28, -600, false);
+    this.spawnBolt(this.px + nudge, this.py - 28, -600, false);
     this.spawnBolt(this.px + 9, this.py - 22, -560, false);
     sfxShot();
-    squashTo(this, this.rig.root, 0.86, 1.16, 90);
-    pulseRing(this, this.px, this.py - 20, 0xe8ff47, 5, 1.5);
+    const punch = shotSquash();
+    squashTo(this, this.rig.root, punch.sx, punch.sy, punch.ms);
+    pulseRing(this, this.px, this.py - 26, 0xe8ff47, 4, 1.25);
     this.hideHint();
   }
 
@@ -368,6 +404,7 @@ export class JumpScene extends Phaser.Scene {
       hp,
       spin: Phaser.Math.FloatBetween(-1.6, 1.6),
       shotAt: this.time.now + Phaser.Math.Between(420, 1100),
+      entered: false,
       root,
     });
   }
@@ -389,6 +426,12 @@ export class JumpScene extends Phaser.Scene {
         f.vx *= -1;
       }
       f.root.setPosition(f.x, f.y);
+      if (f.kind === 'elite' && !f.entered && f.y >= -2) {
+        f.entered = true;
+        const enter = eliteEntrance();
+        popScale(this, f.root, enter.from, 1, enter.ms);
+        pulseRing(this, f.x, f.y, 0xff7a45, 8, 2.1);
+      }
       if (f.kind === 'rock' || f.kind === 'big') f.root.setRotation(f.root.rotation + f.spin * s);
       if ((f.kind === 'drone' || f.kind === 'elite') && this.time.now >= f.shotAt && f.y > 40 && f.y < H * 0.7) {
         f.shotAt = this.time.now + (f.kind === 'elite' ? 720 : 1280);
@@ -415,19 +458,38 @@ export class JumpScene extends Phaser.Scene {
       return true;
     });
 
-    if (this.time.now < this.graceUntil) return;
-    for (const b of this.bolts) {
-      if (b.enemy && circleHit(this.px, this.py, HIT, b.x, b.y, 5)) {
-        this.gameOver();
-        return;
-      }
-    }
+    this.scanThreats();
+  }
+
+  private scanThreats(): void {
+    if (this.phase !== 'play') return;
+    const inGrace = this.time.now < this.graceUntil;
+    let lethal = false;
+    let graze = false;
     for (const f of this.foes) {
-      if (circleHit(this.px, this.py, HIT, f.x, f.y, f.r * 0.72)) {
-        this.gameOver();
-        return;
-      }
+      const gap = surfaceGap(this.px, this.py, HIT, f.x, f.y, f.r * 0.72);
+      if (gap < 0) lethal = true;
+      else if (isNearMiss(gap)) graze = true;
     }
+    for (const b of this.bolts) {
+      if (!b.enemy) continue;
+      const gap = surfaceGap(this.px, this.py, HIT, b.x, b.y, 5);
+      if (gap < 0) lethal = true;
+      else if (isNearMiss(gap)) graze = true;
+    }
+    if (lethal && !inGrace) {
+      this.wasGraze = true;
+      this.gameOver();
+      return;
+    }
+    if (lethal && inGrace && !this.graceSpoken) {
+      this.graceSpoken = true;
+      this.voiceAt(this.px, this.py - 52, graceSaveBanner(), graceSaveWhisper(), '#E8FF47');
+    } else if (graze && !this.wasGraze && this.time.now >= this.grazeUntil) {
+      this.grazeUntil = this.time.now + GRAZE_COOLDOWN_MS;
+      this.voiceAt(this.px, this.py - 52, nearMissBanner(), nearMissWhisper(), '#6EE7FF');
+    }
+    this.wasGraze = graze || lethal;
   }
 
   private hurtFoe(f: Foe): void {
@@ -435,19 +497,88 @@ export class JumpScene extends Phaser.Scene {
     sfxHit();
     f.root.setAlpha(0.45);
     this.tweens.add({ targets: f.root, alpha: 1, duration: 70 });
-    burstDots(this, f.x, f.y, 0xe8ff47, 5);
+    burstDots(this, f.x, f.y, 0xe8ff47, 4);
     if (f.hp > 0) return;
+    this.shatter(f);
     this.foes = this.foes.filter((x) => x !== f);
     f.root.destroy(true);
     this.kills += 1;
-    this.combo = this.time.now < this.comboUntil ? this.combo + 1 : 1;
-    this.comboUntil = this.time.now + 900;
-    const pts = foeStats(f.kind).pts + Math.min(12, (this.combo - 1) * 3);
+    this.combo = nextCombo(this.combo, this.time.now < this.comboUntil);
+    this.comboUntil = this.time.now + COMBO_WINDOW_MS;
+    const pts = scoreKill(f.kind, this.combo);
     this.bonus += pts;
+    const impact = killImpact(f.kind, this.combo);
+    const color = killColor(f.kind);
+    burstDots(this, f.x, f.y, color, killBurstCount(f.kind));
+    const accent = killAccentCount(f.kind);
+    if (accent) burstDots(this, f.x, f.y - 2, 0xf4f1ea, accent);
+    if (impact !== 'none') pulseRing(this, f.x, f.y, color, 12, impact === 'hard' ? 2.6 : 2);
     floatLabel(this, f.x, f.y, this.combo > 1 ? `+${pts} x${this.combo}` : `+${pts}`);
-    pulseRing(this, f.x, f.y, f.kind === 'elite' ? 0xff8bd1 : 0x6ee7ff, 8, 2);
+    const voice = killVoice(f.kind, this.combo);
+    if (voice) this.voiceCenter(voice.banner, voice.whisper, f.kind === 'elite' ? '#FF7A45' : '#E8FF47');
+    this.punch(impact);
+    const wash = momentWash(f.kind, this.combo, f.kind === 'elite' && !this.eliteSeen);
+    if (f.kind === 'elite') this.eliteSeen = true;
+    if (wash) screenWash(this, wash.color, wash.alpha, 280);
     sfxKill();
     this.refreshScore();
+  }
+
+  private shatter(f: Foe): void {
+    const hull = f.kind === 'drone' || f.kind === 'elite';
+    const wreck = drawWreck(this, hull).setDepth(20);
+    wreck.setPosition(f.x, f.y);
+    wreck.setAngle(hull ? 0 : f.root.angle);
+    this.tweens.add({
+      targets: wreck,
+      y: f.y + 26,
+      alpha: 0,
+      angle: wreck.angle + (hull ? -32 : 40),
+      duration: hull ? 280 : 200,
+      ease: 'Quad.out',
+      onComplete: () => wreck.destroy(true),
+    });
+  }
+
+  private punch(impact: JumpImpact): void {
+    const shake = impactShake(impact);
+    const zoom = impactZoom(impact);
+    if (shake) this.cameras.main.shake(shake.ms, shake.intensity);
+    if (zoom === 1) return;
+    this.tweens.killTweensOf(this.cameras.main);
+    this.cameras.main.setZoom(zoom);
+    this.tweens.add({
+      targets: this.cameras.main,
+      zoom: 1,
+      duration: shake?.ms ?? 100,
+      ease: 'Quad.out',
+    });
+  }
+
+  private laneNudge(): number {
+    let best = ASSIST_RANGE + 1;
+    let nudge = 0;
+    const yMax = this.py - 16;
+    const yMin = this.py - 360;
+    for (const f of this.foes) {
+      if (f.y > yMax || f.y < yMin) continue;
+      const adx = Math.abs(f.x - this.px);
+      if (adx < best) {
+        best = adx;
+        nudge = aimNudge(this.px, f.x);
+      }
+    }
+    return nudge;
+  }
+
+  private voiceCenter(banner: string, whisper: string, color: string): void {
+    floatLabel(this, W * 0.5, 124, banner, { size: '22px', color, lift: 26, duration: 880 });
+    floatLabel(this, W * 0.5, 150, whisper, { size: '13px', color: '#6EE7FF', lift: 18, duration: 840 });
+  }
+
+  private voiceAt(x: number, y: number, banner: string, whisper: string, color: string): void {
+    floatLabel(this, x, y, banner, { size: '18px', color, lift: 30, duration: 760 });
+    floatLabel(this, x, y + 16, whisper, { size: '12px', color: '#6EE7FF', lift: 20, duration: 720 });
   }
 
   private refreshScore(): void {
@@ -511,7 +642,7 @@ export class JumpScene extends Phaser.Scene {
   }
 
   private tickDecor(s: number): void {
-    const play = this.phase === 'play' && this.time.now >= this.frozenUntil;
+    const play = this.phase === 'play';
     const drift = (play ? this.scrollSpeed() : 36) * s;
     for (const star of this.stars) {
       star.g.y += star.vy * s * (play ? 1.15 : 0.35);
@@ -531,17 +662,20 @@ export class JumpScene extends Phaser.Scene {
   }
 
   private spawnTrail(): void {
-    if (this.time.now - this.lastTrail < 48) return;
+    if (this.time.now - this.lastTrail < 42) return;
     this.lastTrail = this.time.now;
-    const dot = this.add.circle(this.px, this.py + 18, 3.2, 0xe8ff47, 0.34).setDepth(18);
-    this.tweens.add({
-      targets: dot,
-      y: this.py + 52,
-      alpha: 0,
-      scale: 0.15,
-      duration: 240,
-      onComplete: () => dot.destroy(),
-    });
+    const hot = 0.4 + Math.sin(this.pulse * 40) * 0.12;
+    for (const ox of [-8, 8]) {
+      const dot = this.add.circle(this.px + ox, this.py + 24, 2.3, 0xe8ff47, hot).setDepth(18);
+      this.tweens.add({
+        targets: dot,
+        y: this.py + 58,
+        alpha: 0,
+        scale: 0.18,
+        duration: 220,
+        onComplete: () => dot.destroy(),
+      });
+    }
   }
 
   private showHint(): void {
@@ -564,9 +698,10 @@ export class JumpScene extends Phaser.Scene {
     saveJumpBest(this.score);
     this.best = loadJumpBest();
     this.syncHud();
-    this.frozenUntil = this.time.now + 90;
-    squashTo(this, this.rig.root, 1.24, 0.68, 180);
-    this.cameras.main.shake(190, 0.014);
+    this.tweens.killTweensOf(this.cameras.main);
+    this.cameras.main.setZoom(1);
+    squashTo(this, this.rig.root, 1.24, 0.68, 160);
+    this.cameras.main.shake(160, 0.012);
     burstDots(this, this.px, this.py, 0xff8bd1, 12);
     screenWash(this, 0xff8bd1, 0.2, 280);
     sfxLand();
