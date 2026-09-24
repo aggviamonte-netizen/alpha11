@@ -370,7 +370,7 @@ export class SniperScene extends Phaser.Scene {
       deltaX: x - d.root.x,
       markFresh: fresh,
     });
-    if (voice) this.speak(d.x, d.y - d.r - 4, voice);
+    if (voice) this.speak(d.x, d.y - d.r - 28, voice);
     else if (this.combo >= 2 && !isStreakMilestone(this.combo)) {
       floatLabel(this, d.x + 28, d.y - 8, `x${this.combo}`, { color: '#FF8BD1', size: '14px', lift: 34 });
     }
@@ -456,17 +456,17 @@ export class SniperScene extends Phaser.Scene {
   }
 
   private speak(x: number, y: number, voice: ShotVoice): void {
-    floatLabel(this, x, y - 20, voice.banner, {
-      size: '20px',
+    floatLabel(this, x, y - 22, voice.banner, {
+      size: '22px',
       color: voiceColor(voice.banner),
-      lift: 30,
-      duration: 860,
+      lift: 28,
+      duration: 900,
     });
     floatLabel(this, x, y, voice.whisper, {
-      size: '12px',
+      size: '13px',
       color: '#6EE7FF',
       lift: 18,
-      duration: 800,
+      duration: 860,
     });
   }
 
@@ -623,7 +623,8 @@ export class SniperScene extends Phaser.Scene {
   }
 
   private buildScope(): void {
-    this.scope = this.add.container(this.aimX, this.aimY).setDepth(30);
+    // Under floatLabel (depth 28) so craft banners stay readable on a hit.
+    this.scope = this.add.container(this.aimX, this.aimY).setDepth(24);
     this.glass = this.add.circle(0, 0, 46, 0x6ee7ff, 0.07);
     this.ring = this.add.circle(0, 0, 48, 0x000000, 0).setStrokeStyle(2, 0xf4f1ea, 0.85);
     const outer = this.add.circle(0, 0, 58, 0x000000, 0).setStrokeStyle(3, 0x8b9bff, 0.35);
