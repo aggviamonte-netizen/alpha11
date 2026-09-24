@@ -14,16 +14,41 @@ import {
   sfxTick,
   unlockSniperSfx,
 } from './sfx';
+import {
+  COOLDOWN_MS,
+  ROUND_S,
+  STEADY_S,
+  STREAK_WINDOW_MS,
+  TOUCH_LIFT,
+  classifyShot,
+  dryWhisper,
+  hitAccentCount,
+  hitBurstCount,
+  hitScore,
+  hitSquash,
+  impactShake,
+  isBull,
+  isMarkCeremony,
+  isPlateHit,
+  isSteady,
+  isStreakMilestone,
+  isWindPush,
+  missWhisper,
+  momentWash,
+  nearMissShake,
+  nextCombo,
+  shotImpact,
+  shotSquash,
+  shotVoice,
+  swayAmplitude,
+  voiceColor,
+  windCall,
+  windOffset,
+  type ShotVoice,
+} from './sniperFeel';
 
 export const W = 390;
 export const H = 844;
-
-const ROUND_S = 48;
-const TOUCH_LIFT = 56;
-const COOLDOWN = 260;
-const WIND_PX = 8;
-const STEADY_S = 0.7;
-const HIT_PAD = 16;
 
 type Phase = 'start' | 'play' | 'over';
 type Lane = 0 | 1 | 2;
@@ -80,6 +105,9 @@ export class SniperScene extends Phaser.Scene {
   private score = 0;
   private best = 0;
   private combo = 0;
+  private comboUntil = 0;
+  private seenMark = new Set<number>();
+  private steadyLock = false;
   private left = ROUND_S;
   private wind = 0;
   private nextWind = 0;
@@ -113,6 +141,9 @@ export class SniperScene extends Phaser.Scene {
     this.score = 0;
     this.best = loadSniperBest();
     this.combo = 0;
+    this.comboUntil = 0;
+    this.seenMark = new Set();
+    this.steadyLock = false;
     this.left = ROUND_S;
     this.wind = Phaser.Math.Between(-1, 1);
     this.nextWind = 0;
@@ -185,6 +216,7 @@ export class SniperScene extends Phaser.Scene {
     if (this.phase === 'play') {
       this.left = Math.max(0, this.left - s);
       if (this.aiming) this.hold += s;
+      this.noteSteady();
       if (this.time.now >= this.nextWind) this.rollWind();
       if (this.time.now >= this.nextSpawn) this.trySpawn();
       if (this.left <= 10 && this.left > 0) {
@@ -209,6 +241,9 @@ export class SniperScene extends Phaser.Scene {
     this.phase = 'play';
     this.score = 0;
     this.combo = 0;
+    this.comboUntil = 0;
+    this.seenMark = new Set();
+    this.steadyLock = false;
     this.left = ROUND_S;
     this.ignoreUp = true;
     this.aiming = false;
@@ -233,9 +268,7 @@ export class SniperScene extends Phaser.Scene {
   }
 
   private swayAmp(): number {
-    const grow = 5 + Math.min(8, (ROUND_S - this.left) * 0.16);
-    const calm = 1 - Math.min(0.78, this.hold / STEADY_S);
-    return grow * (this.aiming ? calm : 0.55);
+    return swayAmplitude(this.left, this.hold, this.aiming);
   }
 
   private sway(): { x: number; y: number } {
@@ -250,7 +283,7 @@ export class SniperScene extends Phaser.Scene {
   private reticle(): { x: number; y: number } {
     const s = this.sway();
     return {
-      x: this.aimX + s.x + this.wind * WIND_PX,
+      x: this.aimX + s.x + windOffset(this.wind),
       y: this.aimY + s.y,
     };
   }
@@ -259,9 +292,16 @@ export class SniperScene extends Phaser.Scene {
     if (this.phase !== 'play' || this.left <= 0) return;
     if (this.time.now < this.coolUntil) {
       sfxDry();
+      const hot = this.reticle();
+      floatLabel(this, hot.x, hot.y - 22, dryWhisper(), {
+        color: '#8B9BFF',
+        size: '12px',
+        lift: 18,
+        duration: 420,
+      });
       return;
     }
-    this.coolUntil = this.time.now + COOLDOWN;
+    this.coolUntil = this.time.now + COOLDOWN_MS;
     this.track(this.input.activePointer);
     const ret = this.reticle();
     const impactX = Phaser.Math.Clamp(ret.x, 12, W - 12);
@@ -285,7 +325,7 @@ export class SniperScene extends Phaser.Scene {
       const tx = d.root.x;
       const ty = d.root.y;
       const dist = Math.hypot(x - tx, y - ty);
-      if (dist <= d.r + HIT_PAD && dist < bestD) {
+      if (isPlateHit(dist, d.r) && dist < bestD) {
         best = d;
         bestD = dist;
       }
@@ -298,34 +338,61 @@ export class SniperScene extends Phaser.Scene {
     const slot = this.slots[d.slot];
     if (slot) slot.taken = false;
     const dist = Math.hypot(x - d.root.x, y - d.root.y);
-    const bull = dist <= d.r * 0.32;
-    this.combo += 1;
-    const lanePts = LANE[d.lane].pts;
-    const tierPts = d.tier * 12;
-    const streak = 1 + Math.min(this.combo - 1, 4) * 0.18;
-    const pts = Math.round((lanePts + tierPts) * (bull ? 1.6 : 1) * streak);
+    const band = classifyShot(dist, d.r);
+    const within = this.combo > 0 && this.time.now <= this.comboUntil;
+    this.combo = nextCombo(this.combo, within);
+    this.comboUntil = this.time.now + STREAK_WINDOW_MS;
+    const bull = isBull(band);
+    const pts = hitScore(LANE[d.lane].pts, d.tier, this.combo, bull);
     this.score += pts;
     this.syncHud();
 
     const col = rangeMark(d.tier).color;
-    burstDots(this, d.x, d.y, col, bull ? 12 : 8);
-    burstDots(this, d.x, d.y, 0xe8ff47, 5);
-    squashTo(this, d.root, 1.28, 0.62, 140);
-    floatLabel(this, d.x, d.y - d.r - 6, `+${pts}`, {
+    burstDots(this, d.x, d.y, col, hitBurstCount(band));
+    const accent = hitAccentCount(band);
+    if (accent) burstDots(this, d.x, d.y, 0xe8ff47, accent);
+    const squash = hitSquash(band);
+    squashTo(this, d.root, squash.sx, squash.sy, squash.ms);
+    floatLabel(this, d.x + 36, d.y + 6, `+${pts}`, {
       color: bull ? '#E8FF47' : '#F4F1EA',
       size: bull ? '20px' : '16px',
       lift: 46,
     });
-    if (bull) {
-      floatLabel(this, d.x, d.y + 10, 'CENTRO', { color: '#6EE7FF', size: '12px', lift: 28 });
-      sfxBull();
-      screenWash(this, 0xe8ff47, 0.14, 160);
-    } else {
-      sfxHit(this.combo);
-    }
-    if (this.combo >= 3) {
+
+    const fresh = isMarkCeremony(d.tier) && !this.seenMark.has(d.tier);
+    if (isMarkCeremony(d.tier)) this.seenMark.add(d.tier);
+    const voice = shotVoice({
+      band,
+      tier: d.tier,
+      combo: this.combo,
+      steady: isSteady(this.hold),
+      wind: this.wind,
+      deltaX: x - d.root.x,
+      markFresh: fresh,
+    });
+    if (voice) this.speak(d.x, d.y - d.r - 4, voice);
+    else if (this.combo >= 2 && !isStreakMilestone(this.combo)) {
       floatLabel(this, d.x + 28, d.y - 8, `x${this.combo}`, { color: '#FF8BD1', size: '14px', lift: 34 });
     }
+
+    if (bull) sfxBull();
+    else sfxHit(this.combo);
+
+    const impact = shotImpact(band, this.combo);
+    const shake = impactShake(impact);
+    if (shake) this.cameras.main.shake(shake.ms, shake.intensity);
+    if (impact === 'hard') pulseRing(this, d.x, d.y, col, 14, 2.4);
+    else if (impact === 'soft') pulseRing(this, d.x, d.y, col, 10, 1.9);
+
+    const wash = momentWash({
+      band,
+      combo: this.combo,
+      wind: this.wind,
+      tier: d.tier,
+      markFresh: fresh,
+    });
+    if (wash) screenWash(this, wash.color, wash.alpha, wash.ms);
+
     this.tweens.add({
       targets: d.root,
       y: d.y - 36,
@@ -342,7 +409,35 @@ export class SniperScene extends Phaser.Scene {
 
   private landMiss(x: number, y: number): void {
     this.combo = 0;
+    this.comboUntil = 0;
     sfxMiss();
+
+    let near: { d: Dummy; dist: number } | null = null;
+    for (const d of this.dummies) {
+      if (!d.live) continue;
+      const dist = Math.hypot(x - d.root.x, y - d.root.y);
+      if (!near || dist < near.dist) near = { d, dist };
+    }
+    if (near && classifyShot(near.dist, near.d.r) === 'cerca') {
+      const deltaX = x - near.d.root.x;
+      const pushed = isWindPush(this.wind, deltaX);
+      burstDots(this, x, y, pushed ? 0xff7a45 : 0x6ee7ff, hitBurstCount('cerca'));
+      pulseRing(this, x, y, pushed ? 0xff7a45 : 0x6ee7ff, 8, 1.8);
+      const graze = nearMissShake();
+      this.cameras.main.shake(graze.ms, graze.intensity);
+      const voice = shotVoice({
+        band: 'cerca',
+        tier: near.d.tier,
+        combo: 0,
+        steady: isSteady(this.hold),
+        wind: this.wind,
+        deltaX,
+        markFresh: false,
+      });
+      if (voice) this.speak(x, y - 16, voice);
+      return;
+    }
+
     const dust = this.add.circle(x, y, 4, 0xf4f1ea, 0.45).setDepth(20);
     this.tweens.add({
       targets: dust,
@@ -351,7 +446,40 @@ export class SniperScene extends Phaser.Scene {
       duration: 280,
       onComplete: () => dust.destroy(),
     });
-    burstDots(this, x, y, 0xf4f1ea, 4);
+    burstDots(this, x, y, 0xf4f1ea, hitBurstCount('aire'));
+    floatLabel(this, x, y - 14, missWhisper(), {
+      color: '#F4F1EA',
+      size: '12px',
+      lift: 20,
+      duration: 480,
+    });
+  }
+
+  private speak(x: number, y: number, voice: ShotVoice): void {
+    floatLabel(this, x, y - 20, voice.banner, {
+      size: '20px',
+      color: voiceColor(voice.banner),
+      lift: 30,
+      duration: 860,
+    });
+    floatLabel(this, x, y, voice.whisper, {
+      size: '12px',
+      color: '#6EE7FF',
+      lift: 18,
+      duration: 800,
+    });
+  }
+
+  private noteSteady(): void {
+    if (this.aiming && isSteady(this.hold)) {
+      if (this.steadyLock) return;
+      this.steadyLock = true;
+      const ret = this.reticle();
+      pulseRing(this, ret.x, ret.y, 0xe8ff47, 28, 1.45);
+      sfxTick();
+      return;
+    }
+    if (!this.aiming) this.steadyLock = false;
   }
 
   private trySpawn(): void {
@@ -445,19 +573,20 @@ export class SniperScene extends Phaser.Scene {
       duration: 80,
       yoyo: true,
     });
+    const gust = Math.abs(this.wind) >= 2;
+    floatLabel(this, W / 2, 146, windCall(this.wind), {
+      color: gust ? '#8B9BFF' : '#F4F1EA',
+      size: gust ? '14px' : '12px',
+      lift: 22,
+      duration: 680,
+    });
+    if (gust) pulseRing(this, W / 2, 118, 0x8b9bff, 6, 2.1);
     this.syncHud();
   }
 
   private scopeKick(): void {
-    this.tweens.killTweensOf(this.scope);
-    this.scope.setScale(1.04);
-    this.tweens.add({
-      targets: this.scope,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 140,
-      ease: 'Sine.out',
-    });
+    const punch = shotSquash();
+    squashTo(this, this.scope, punch.sx, punch.sy, punch.ms);
     this.aimY = Math.max(120, this.aimY - 10);
   }
 
