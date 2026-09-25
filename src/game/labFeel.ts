@@ -1,16 +1,20 @@
+import { DANGER_Y, FLOOR_Y, INNER_L, INNER_R } from './layout';
+
 /**
  * LAB merge feel. Pure helpers — no Phaser.
  * Drop aim, gravity, the 200ms fuse, and the danger line stay in the scene.
- * This module only decides how a fuse sounds, shakes, and pays a capped streak.
+ * This module only decides how a fuse sounds, shakes, and pays the fixed ×1.2 combo.
  */
 
 /**
- * Fuses chain only inside this window.
- * The old combo flag was 1000ms: a second fuse inside that second paid ×1.2.
- * 1400 still covers a drop that leaves the hand, lands, and fuses, and a short
- * cascade finishes inside it. A pause to re-aim, past a second and a half, breaks it.
+ * Fuses chain only inside this window — the lab's original 1000ms combo rule.
+ * A fuse strictly under a second after the last one pays ×1.2. Juice only here:
+ * the pay curve is unchanged from main.
  */
-export const STREAK_WINDOW_MS = 1400;
+export const STREAK_WINDOW_MS = 1000;
+
+/** The lab's fixed combo pay: ×1.2 in thousandths. */
+export const COMBO_THOUSANDTHS = 1200;
 
 /** Same rest-above-the-line fail the well already used. */
 export const DANGER_HOLD_MS = 1500;
@@ -47,21 +51,23 @@ export function isChainOpen(combo: number): boolean {
 }
 
 /**
- * First fuse is flat. The second keeps the old ×1.2.
- * Three more steps of +0.05, then it stops at ×1.35.
- * Thousandths so the cap does not drift.
+ * First fuse is flat. Any chained fuse pays the lab's fixed ×1.2 — no ramp.
+ * Thousandths so the multiplier does not drift.
  */
 export function streakThousandths(combo: number): number {
-  if (combo <= 1) return 1000;
-  const steps = Math.min(combo - 1, 4);
-  return 1200 + (steps - 1) * 50;
+  return combo <= 1 ? 1000 : COMBO_THOUSANDTHS;
+}
+
+/** Chain holds while the next fuse lands strictly inside the window (old `< 1000`). */
+export function withinStreak(lastMs: number | null, nowMs: number): boolean {
+  return lastMs != null && nowMs - lastMs < STREAK_WINDOW_MS;
 }
 
 export function streakMultiplier(combo: number): number {
   return streakThousandths(combo) / 1000;
 }
 
-/** Same base the lab already paid: tier² × 10, then the capped streak. */
+/** Same base the lab already paid: tier² × 10, then ×1.2 on a chained fuse. */
 export function mergeScore(tier: number, combo: number): number {
   const base = tier * tier * 10;
   return Math.round((base * streakThousandths(combo)) / 1000);
@@ -275,4 +281,70 @@ export function momentWash(opts: {
   if (opts.combo === 8) return { color: 0xe8ff47, alpha: 0.12, ms: 180 };
   if (opts.clutch === 'filo') return { color: 0xff3b4a, alpha: 0.12, ms: 160 };
   return null;
+}
+
+/* ---------- Banner placement (mobile portrait) ---------- */
+
+export const BANNER_SIZE_PX = 22;
+export const WHISPER_SIZE_PX = 13;
+/** Banner sits this far above its whisper. */
+export const BANNER_GAP_PX = 22;
+export const BANNER_LIFT_PX = 28;
+export const WHISPER_LIFT_PX = 18;
+/** floatLabel tweens scale up to 1.08; stroke adds a few px each side. */
+const TWEEN_SCALE = 1.08;
+const STROKE_PX = 5;
+/** Generous per-glyph width for the bold UI font (caps + ¡!). */
+const GLYPH_W = 0.66;
+/** Breathing room from the walls. */
+export const BANNER_WALL_PAD_PX = 6;
+/**
+ * Highest any part of the banner stack may reach (incl. its lift and scale).
+ * Below the danger line with a margin, so it never covers the drop zone,
+ * the preview, or the line itself.
+ */
+export const BANNER_TOP_MIN_Y = DANGER_Y + 10;
+/** Lowest the whisper may sit (its bottom stays above the floor). */
+export const BANNER_BOTTOM_MAX_Y = FLOOR_Y - 8;
+
+/** Worst-case rendered width (px) of a floating label at the end of its tween. */
+export function labelWidth(text: string, sizePx: number): number {
+  const chars = Array.from(text).length;
+  return Math.ceil(chars * sizePx * GLYPH_W * TWEEN_SCALE + STROKE_PX * 2);
+}
+
+function labelHalfHeight(sizePx: number): number {
+  return Math.ceil((sizePx * 1.25 * TWEEN_SCALE) / 2 + STROKE_PX);
+}
+
+/** Keep a label of this width fully inside the well. */
+export function clampLabelX(x: number, width: number): number {
+  const lo = INNER_L + BANNER_WALL_PAD_PX + width / 2;
+  const hi = INNER_R - BANNER_WALL_PAD_PX - width / 2;
+  if (lo > hi) return (INNER_L + INNER_R) / 2;
+  return Math.min(hi, Math.max(lo, x));
+}
+
+/** Smallest whisper y that keeps the risen banner's top below BANNER_TOP_MIN_Y. */
+export function bannerMinWhisperY(): number {
+  return BANNER_TOP_MIN_Y + BANNER_LIFT_PX + BANNER_GAP_PX + labelHalfHeight(BANNER_SIZE_PX);
+}
+
+/** Largest whisper y that keeps the whisper above the floor. */
+export function bannerMaxWhisperY(): number {
+  return BANNER_BOTTOM_MAX_Y - labelHalfHeight(WHISPER_SIZE_PX);
+}
+
+export type BannerLayout = { x: number; bannerY: number; whisperY: number };
+
+/**
+ * Where a banner + whisper stack is drawn, given the wanted whisper anchor.
+ * x: clamped so the wider of the two lines stays inside the well.
+ * y: pushed below the danger line (never over the drop/preview band), kept above the floor.
+ */
+export function bannerLayout(x: number, y: number, voice: LabVoice): BannerLayout {
+  const w = Math.max(labelWidth(voice.banner, BANNER_SIZE_PX), labelWidth(voice.whisper, WHISPER_SIZE_PX));
+  const cx = clampLabelX(x, w);
+  const wy = Math.min(bannerMaxWhisperY(), Math.max(bannerMinWhisperY(), y));
+  return { x: cx, bannerY: wy - BANNER_GAP_PX, whisperY: wy };
 }

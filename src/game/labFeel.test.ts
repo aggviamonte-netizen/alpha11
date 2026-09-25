@@ -34,13 +34,26 @@ import {
   streakWhisper,
   tierCeremony,
   voiceColor,
+  withinStreak,
+  bannerLayout,
+  bannerMinWhisperY,
+  bannerMaxWhisperY,
+  clampLabelX,
+  labelWidth,
+  BANNER_GAP_PX,
+  BANNER_LIFT_PX,
+  BANNER_SIZE_PX,
+  BANNER_TOP_MIN_Y,
+  WHISPER_SIZE_PX,
 } from './labFeel';
+import { DANGER_Y, DROP_Y, FLOOR_Y, INNER_L, INNER_R } from './layout';
 
 describe('honest lab numbers', () => {
-  it('gives a fuse a window a touch longer than the old second, and shorter than a re-aim', () => {
-    assert.equal(STREAK_WINDOW_MS, 1400);
-    assert.ok(STREAK_WINDOW_MS > 1000);
-    assert.ok(STREAK_WINDOW_MS < 1600);
+  it('keeps the original 1000ms combo window (strictly under a second)', () => {
+    assert.equal(STREAK_WINDOW_MS, 1000);
+    assert.equal(withinStreak(null, 500), false);
+    assert.equal(withinStreak(1000, 1999), true);
+    assert.equal(withinStreak(1000, 2000), false);
   });
 
   it('keeps the danger fail and treats only a real rest as a clutch', () => {
@@ -86,24 +99,24 @@ describe('streak pay', () => {
     assert.equal(isStreakMilestone(15), true);
   });
 
-  it('pays the old flat fuse, the old ×1.2 on the second, and stops at four steps', () => {
+  it('pays the old flat fuse and the fixed ×1.2 on every chained fuse (no ramp)', () => {
     assert.equal(streakThousandths(1), 1000);
     assert.equal(streakThousandths(2), 1200);
     assert.equal(streakMultiplier(2), 1.2);
-    assert.equal(streakThousandths(5), 1350);
-    assert.equal(streakThousandths(9), 1350);
+    assert.equal(streakThousandths(5), 1200);
+    assert.equal(streakThousandths(9), 1200);
+    assert.equal(streakMultiplier(20), 1.2);
     assert.equal(mergeScore(1, 1), 10);
     assert.equal(mergeScore(1, 2), 12);
     assert.equal(mergeScore(5, 1), 250);
     assert.equal(mergeScore(5, 2), 300);
     assert.equal(mergeScore(11, 1), 1210);
     assert.equal(mergeScore(11, 2), 1452);
-    assert.equal(mergeScore(11, 5), mergeScore(11, 20));
-    assert.ok(mergeScore(11, 5) > mergeScore(11, 2));
-    assert.ok(mergeScore(11, 5) < 1210 * 1.5);
+    assert.equal(mergeScore(11, 5), 1452);
+    assert.equal(mergeScore(11, 20), 1452);
     assert.equal(popScore(1), 2420);
     assert.equal(popScore(2), 2904);
-    assert.equal(popScore(5), mergeScore(11, 5) * 2);
+    assert.equal(popScore(5), 2904);
   });
 });
 
@@ -226,5 +239,64 @@ describe('merge juice', () => {
     assert.equal(momentWash({ ...base, combo: 13 }), null);
     assert.equal(momentWash({ ...base, clutch: 'salvado' }), null);
     assert.equal(momentWash({ ...base, clutch: 'filo' })?.color, 0xff3b4a);
+  });
+});
+
+describe('banner placement (mobile portrait)', () => {
+  const longest = [
+    { banner: '¡MESA LIMPIA!', whisper: 'se fueron las dos' },
+    { banner: '¡CALABAZA!', whisper: 'naranja y ancha' },
+    { banner: '¡SALVADO!', whisper: 'bajó de la línea' },
+    { banner: '¡AL FILO!', whisper: 'por un pelo' },
+  ];
+
+  function spanOf(at: { x: number }, voice: { banner: string; whisper: string }) {
+    const w = Math.max(labelWidth(voice.banner, BANNER_SIZE_PX), labelWidth(voice.whisper, WHISPER_SIZE_PX));
+    return { left: at.x - w / 2, right: at.x + w / 2 };
+  }
+
+  it('keeps the full text inside the well even for merges hugging a wall', () => {
+    for (const voice of longest) {
+      for (const x of [INNER_L, INNER_L + 5, 60, 195, 330, INNER_R - 5, INNER_R, -50, 999]) {
+        const at = bannerLayout(x, 400, voice);
+        const span = spanOf(at, voice);
+        assert.ok(span.left >= INNER_L, `${voice.banner} at x=${x} cut on the left (${span.left})`);
+        assert.ok(span.right <= INNER_R, `${voice.banner} at x=${x} cut on the right (${span.right})`);
+      }
+    }
+  });
+
+  it('leaves a centred banner where the merge was', () => {
+    const at = bannerLayout(195, 400, longest[0]);
+    assert.equal(at.x, 195);
+    assert.equal(at.whisperY, 400);
+    assert.equal(at.bannerY, 400 - BANNER_GAP_PX);
+  });
+
+  it('clamps any label into the well and centres one wider than the well', () => {
+    assert.equal(clampLabelX(195, 40), 195);
+    assert.ok(clampLabelX(INNER_L, 40) - 20 >= INNER_L);
+    assert.ok(clampLabelX(INNER_R, 40) + 20 <= INNER_R);
+    assert.equal(clampLabelX(0, 10_000), (INNER_L + INNER_R) / 2);
+  });
+
+  it('never covers the drop zone, the preview, or the danger line — even after the lift', () => {
+    assert.ok(BANNER_TOP_MIN_Y > DANGER_Y);
+    assert.ok(BANNER_TOP_MIN_Y > DROP_Y + 40);
+    for (const y of [0, DROP_Y - 30, DROP_Y, DROP_Y + 40, DANGER_Y, DANGER_Y + 20, 280]) {
+      const at = bannerLayout(195, y, longest[0]);
+      assert.equal(at.whisperY, bannerMinWhisperY());
+      // Risen banner: centre moves up by the lift, half its (scaled, stroked) height above that.
+      const bannerTop = at.bannerY - BANNER_LIFT_PX - (BANNER_SIZE_PX * 1.25 * 1.08) / 2 - 5;
+      assert.ok(bannerTop >= BANNER_TOP_MIN_Y, `banner top ${bannerTop} for y=${y}`);
+      assert.ok(bannerTop > DANGER_Y);
+    }
+  });
+
+  it('keeps the stack above the floor for low merges', () => {
+    const at = bannerLayout(195, FLOOR_Y + 40, longest[0]);
+    assert.equal(at.whisperY, bannerMaxWhisperY());
+    assert.ok(at.whisperY < FLOOR_Y);
+    assert.ok(bannerMinWhisperY() < bannerMaxWhisperY());
   });
 });

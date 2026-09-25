@@ -3,10 +3,16 @@ import { creature, halfWidthPx, radiusPx, rollDropTier } from './canon';
 import { DANGER_Y, DROP_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL } from './layout';
 import { burstDots, floatLabel, pulseRing, screenWash, squashTo } from './juice';
 import {
+  BANNER_LIFT_PX,
+  BANNER_SIZE_PX,
   CLUTCH_COOLDOWN_MS,
+  WHISPER_LIFT_PX,
+  WHISPER_SIZE_PX,
   DANGER_HOLD_MS,
-  STREAK_WINDOW_MS,
+  bannerLayout,
   clutchBand,
+  clampLabelX,
+  labelWidth,
   clutchRank,
   clutchVoice,
   contactSquash,
@@ -23,6 +29,7 @@ import {
   nextCombo,
   pointsStyle,
   voiceColor,
+  withinStreak,
   type ClutchBand,
   type LabVoice,
 } from './labFeel';
@@ -78,7 +85,7 @@ export class LabScene extends Phaser.Scene {
   private score = 0;
   private best = 0;
   private combo = 0;
-  private comboUntil = 0;
+  private lastMerge: number | null = null;
   private seenTier = new Set<number>();
   private popSeen = false;
   private clutchUntil = 0;
@@ -104,7 +111,7 @@ export class LabScene extends Phaser.Scene {
     this.score = 0;
     this.best = loadBest();
     this.combo = 0;
-    this.comboUntil = 0;
+    this.lastMerge = null;
     this.seenTier.clear();
     this.popSeen = false;
     this.clutchUntil = 0;
@@ -174,7 +181,7 @@ export class LabScene extends Phaser.Scene {
     this.phase = 'play';
     this.score = 0;
     this.combo = 0;
-    this.comboUntil = 0;
+    this.lastMerge = null;
     this.seenTier.clear();
     this.popSeen = false;
     this.clutchUntil = 0;
@@ -393,9 +400,9 @@ export class LabScene extends Phaser.Scene {
     const now = this.time.now;
     const held = Math.max(this.holdMs(a, now), this.holdMs(b, now));
     const clutch = clutchBand(held);
-    const within = this.combo > 0 && now <= this.comboUntil;
+    const within = this.combo > 0 && withinStreak(this.lastMerge, now);
     this.combo = nextCombo(this.combo, within);
-    this.comboUntil = now + STREAK_WINDOW_MS;
+    this.lastMerge = now;
     const pop = a.tier >= 11;
     const produced = pop ? 11 : a.tier + 1;
     const tierFresh = !pop && isTierCeremony(produced) && !this.seenTier.has(produced);
@@ -427,7 +434,8 @@ export class LabScene extends Phaser.Scene {
     });
     if (voice) this.speak(mx, my - 52, voice);
     else if (this.combo >= 2) {
-      floatLabel(this, mx, my - 28, `x${this.combo}`, { color: '#FF8BD1', size: '14px', lift: 34 });
+      const tag = `x${this.combo}`;
+      floatLabel(this, clampLabelX(mx, labelWidth(tag, 14)), my - 28, tag, { color: '#FF8BD1', size: '14px', lift: 34 });
     }
     const wash = momentWash({ tier: produced, pop, combo: this.combo, tierFresh, clutch });
     if (wash) screenWash(this, wash.color, wash.alpha, wash.ms);
@@ -468,7 +476,8 @@ export class LabScene extends Phaser.Scene {
     this.best = loadBest();
     this.syncHud();
     const style = pointsStyle(pop, combo);
-    floatLabel(this, x, y, `+${pts}`, style);
+    const label = `+${pts}`;
+    floatLabel(this, clampLabelX(x, labelWidth(label, parseInt(style.size, 10))), y, label, style);
   }
 
   private holdMs(p: Piece, now: number): number {
@@ -477,16 +486,17 @@ export class LabScene extends Phaser.Scene {
   }
 
   private speak(x: number, y: number, voice: LabVoice): void {
-    floatLabel(this, x, y - 22, voice.banner, {
-      size: '22px',
+    const at = bannerLayout(x, y, voice);
+    floatLabel(this, at.x, at.bannerY, voice.banner, {
+      size: `${BANNER_SIZE_PX}px`,
       color: voiceColor(voice.banner),
-      lift: 28,
+      lift: BANNER_LIFT_PX,
       duration: 900,
     });
-    floatLabel(this, x, y, voice.whisper, {
-      size: '13px',
+    floatLabel(this, at.x, at.whisperY, voice.whisper, {
+      size: `${WHISPER_SIZE_PX}px`,
       color: '#6EE7FF',
-      lift: 18,
+      lift: WHISPER_LIFT_PX,
       duration: 860,
     });
   }

@@ -26,9 +26,8 @@ export function resetScore(): void {
 }
 
 /**
- * Points for a merge that produces tier N.
- * The streak curve lives in labFeel: flat on the first fuse, the old ×1.2
- * on the second, then +0.05 a step until ×1.35.
+ * Points for a merge that produces tier N: tier² × 10.
+ * Combo ×1.2 (fixed) when the last merge was <1s ago (combo >= 2).
  */
 export function mergePoints(tier: number, combo: number): number {
   return mergeScore(tier, combo);
