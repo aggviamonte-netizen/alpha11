@@ -1,7 +1,31 @@
 import Phaser from 'phaser';
 import { creature, halfWidthPx, radiusPx, rollDropTier } from './canon';
 import { DANGER_Y, DROP_Y, FLOOR_Y, H, INNER_L, INNER_R, W, WALL } from './layout';
-import { burstDots, floatLabel, screenWash, squashTo } from './juice';
+import { burstDots, floatLabel, pulseRing, screenWash, squashTo } from './juice';
+import {
+  CLUTCH_COOLDOWN_MS,
+  DANGER_HOLD_MS,
+  STREAK_WINDOW_MS,
+  clutchBand,
+  clutchRank,
+  clutchVoice,
+  contactSquash,
+  dropSquash,
+  impactFreeze,
+  impactShake,
+  isTierCeremony,
+  mergeAccentCount,
+  mergeBurstCount,
+  mergeImpact,
+  mergeRing,
+  mergeVoice,
+  momentWash,
+  nextCombo,
+  pointsStyle,
+  voiceColor,
+  type ClutchBand,
+  type LabVoice,
+} from './labFeel';
 import { loadBest, mergePoints, popPoints, resetScore, saveScore } from './score';
 import { sfxDrop, sfxMerge, sfxOver, sfxPop, unlockSfx } from './sfx';
 import { drawCreature, paintArena } from './sprites';
@@ -10,8 +34,6 @@ import { addVeggieBody } from './veggieBody';
 export { H, W };
 
 const MERGE_MS = 200;
-const DANGER_MS = 1500;
-const COMBO_MS = 1000;
 const DROP_CD = 360;
 
 type Phase = 'start' | 'play' | 'over';
@@ -55,7 +77,11 @@ export class LabScene extends Phaser.Scene {
   private phase: Phase = 'start';
   private score = 0;
   private best = 0;
-  private lastMerge = 0;
+  private combo = 0;
+  private comboUntil = 0;
+  private seenTier = new Set<number>();
+  private popSeen = false;
+  private clutchUntil = 0;
   private canDrop = false;
   private nextTier = 1;
   private preview: Preview | null = null;
@@ -77,7 +103,11 @@ export class LabScene extends Phaser.Scene {
     this.phase = 'start';
     this.score = 0;
     this.best = loadBest();
-    this.lastMerge = 0;
+    this.combo = 0;
+    this.comboUntil = 0;
+    this.seenTier.clear();
+    this.popSeen = false;
+    this.clutchUntil = 0;
     this.canDrop = false;
     this.preview = null;
     this.pieces = [];
@@ -143,6 +173,11 @@ export class LabScene extends Phaser.Scene {
     el('overlay-start').onclick = null;
     this.phase = 'play';
     this.score = 0;
+    this.combo = 0;
+    this.comboUntil = 0;
+    this.seenTier.clear();
+    this.popSeen = false;
+    this.clutchUntil = 0;
     resetScore();
     saveScore(0);
     this.syncHud();
@@ -275,7 +310,8 @@ export class LabScene extends Phaser.Scene {
         ease: 'Back.out',
       });
     } else {
-      squashTo(this, root, 1.16, 0.76, 180);
+      const landed = dropSquash();
+      squashTo(this, root, landed.sx, landed.sy, landed.ms);
     }
     const piece: Piece = {
       id: nextPieceId++,
@@ -300,20 +336,23 @@ export class LabScene extends Phaser.Scene {
       const pa = this.byBody.get(pair.bodyA);
       const pb = this.byBody.get(pair.bodyB);
       if (pa && pb) {
-        this.squash(pa, 1.16, 0.82, now);
-        this.squash(pb, 1.16, 0.82, now);
+        const hit = contactSquash(false);
+        this.squash(pa, hit.sx, hit.sy, hit.ms, now);
+        this.squash(pb, hit.sx, hit.sy, hit.ms, now);
       } else if (pa && pair.bodyB === this.floorBody) {
-        this.squash(pa, 1.12, 0.84, now);
+        const hit = contactSquash(true);
+        this.squash(pa, hit.sx, hit.sy, hit.ms, now);
       } else if (pb && pair.bodyA === this.floorBody) {
-        this.squash(pb, 1.12, 0.84, now);
+        const hit = contactSquash(true);
+        this.squash(pb, hit.sx, hit.sy, hit.ms, now);
       }
     }
   }
 
-  private squash(p: Piece, sx: number, sy: number, now: number): void {
+  private squash(p: Piece, sx: number, sy: number, ms: number, now: number): void {
     if (p.locked || now - p.lastSquash < 90) return;
     p.lastSquash = now;
-    squashTo(this, p.root, sx, sy, 150);
+    squashTo(this, p.root, sx, sy, ms);
   }
 
   private tickMerges(now: number): void {
@@ -351,30 +390,58 @@ export class LabScene extends Phaser.Scene {
     b.locked = true;
     const mx = (a.body.position.x + b.body.position.x) / 2;
     const my = (a.body.position.y + b.body.position.y) / 2;
-    const combo = this.lastMerge > 0 && this.time.now - this.lastMerge < COMBO_MS;
-    this.lastMerge = this.time.now;
-    const tint = creature(a.tier).color;
+    const now = this.time.now;
+    const held = Math.max(this.holdMs(a, now), this.holdMs(b, now));
+    const clutch = clutchBand(held);
+    const within = this.combo > 0 && now <= this.comboUntil;
+    this.combo = nextCombo(this.combo, within);
+    this.comboUntil = now + STREAK_WINDOW_MS;
+    const pop = a.tier >= 11;
+    const produced = pop ? 11 : a.tier + 1;
+    const tierFresh = !pop && isTierCeremony(produced) && !this.seenTier.has(produced);
+    if (!pop && isTierCeremony(produced)) this.seenTier.add(produced);
+    const popFresh = pop && !this.popSeen;
+    if (pop) this.popSeen = true;
+    if (clutch !== 'none') this.clutchUntil = now + CLUTCH_COOLDOWN_MS;
+    const tint = pop ? 0xf4f1ea : creature(produced).color;
     this.kill(a);
     this.kill(b);
 
-    if (a.tier >= 11) {
-      const pts = popPoints(combo);
-      this.addScore(pts, mx, my, combo, true);
-      burstDots(this, mx, my, 0xf4f1ea, 12);
-      this.cameras.main.shake(90, 0.006);
+    const pts = pop ? popPoints(this.combo) : mergePoints(produced, this.combo);
+    this.addScore(pts, mx, my, this.combo, pop);
+    burstDots(this, mx, my, tint, mergeBurstCount(produced, pop, this.combo));
+    const accent = mergeAccentCount(produced, pop);
+    if (accent) burstDots(this, mx, my - 2, 0xf4f1ea, accent);
+    const ring = mergeRing(produced, pop, this.combo);
+    if (ring) pulseRing(this, mx, my, tint, ring.start, ring.scale);
+    const impact = mergeImpact(produced, pop, this.combo);
+    const shake = impactShake(impact);
+    this.cameras.main.shake(shake.ms, shake.intensity);
+    const voice = mergeVoice({
+      tier: produced,
+      pop,
+      popFresh,
+      combo: this.combo,
+      tierFresh,
+      clutch,
+    });
+    if (voice) this.speak(mx, my - 52, voice);
+    else if (this.combo >= 2) {
+      floatLabel(this, mx, my - 28, `x${this.combo}`, { color: '#FF8BD1', size: '14px', lift: 34 });
+    }
+    const wash = momentWash({ tier: produced, pop, combo: this.combo, tierFresh, clutch });
+    if (wash) screenWash(this, wash.color, wash.alpha, wash.ms);
+
+    if (pop) {
       sfxPop();
-      this.hitStop(72);
+      this.hitStop(impactFreeze(impact));
       return;
     }
 
-    const pts = mergePoints(a.tier + 1, combo);
-    this.addScore(pts, mx, my, combo, false);
-    burstDots(this, mx, my, tint, combo ? 11 : 8);
-    this.cameras.main.shake(combo ? 70 : 46, combo ? 0.0045 : 0.003);
-    sfxMerge(combo);
-    const born = this.spawn(a.tier + 1, mx, my, true);
+    sfxMerge(this.combo >= 2);
+    const born = this.spawn(produced, mx, my, true);
     this.matter.body.setVelocity(born.body, { x: 0, y: -1.4 });
-    this.hitStop(combo ? 46 : 28);
+    this.hitStop(impactFreeze(impact));
   }
 
   private hitStop(ms: number): void {
@@ -395,24 +462,59 @@ export class LabScene extends Phaser.Scene {
     this.pieces = this.pieces.filter((x) => x.id !== p.id);
   }
 
-  private addScore(pts: number, x: number, y: number, combo: boolean, pop: boolean): void {
+  private addScore(pts: number, x: number, y: number, combo: number, pop: boolean): void {
     this.score += pts;
     saveScore(this.score);
     this.best = loadBest();
     this.syncHud();
-    const label = pop ? `+${pts} POP` : combo ? `+${pts} COMBO` : `+${pts}`;
-    floatLabel(this, x, y, label, {
-      color: pop ? '#F4F1EA' : '#E8FF47',
-      size: pop ? '20px' : combo ? '18px' : '16px',
+    const style = pointsStyle(pop, combo);
+    floatLabel(this, x, y, `+${pts}`, style);
+  }
+
+  private holdMs(p: Piece, now: number): number {
+    if (p.overSince == null) return 0;
+    return now - p.overSince;
+  }
+
+  private speak(x: number, y: number, voice: LabVoice): void {
+    floatLabel(this, x, y - 22, voice.banner, {
+      size: '22px',
+      color: voiceColor(voice.banner),
+      lift: 28,
+      duration: 900,
     });
+    floatLabel(this, x, y, voice.whisper, {
+      size: '13px',
+      color: '#6EE7FF',
+      lift: 18,
+      duration: 860,
+    });
+  }
+
+  private voiceClutch(x: number, y: number, band: ClutchBand, now: number): void {
+    if (now < this.clutchUntil) return;
+    const voice = clutchVoice(band);
+    if (!voice) return;
+    this.clutchUntil = now + CLUTCH_COOLDOWN_MS;
+    if (band === 'filo') {
+      pulseRing(this, x, y, 0xff3b4a, 10, 2.2);
+      const wash = momentWash({ tier: 1, pop: false, combo: this.combo, tierFresh: false, clutch: 'filo' });
+      if (wash) screenWash(this, wash.color, wash.alpha, wash.ms);
+    }
+    this.speak(x, y - 20, voice);
   }
 
   private tickDanger(now: number): void {
     let hot = false;
+    let saved: { band: ClutchBand; x: number; y: number } | null = null;
     for (const p of this.pieces) {
       if (p.locked) continue;
       const top = p.body.bounds.min.y;
       if (top > DANGER_Y) {
+        const band = clutchBand(this.holdMs(p, now));
+        if (band !== 'none' && (!saved || clutchRank(band) > clutchRank(saved.band))) {
+          saved = { band, x: p.body.position.x, y: p.body.position.y };
+        }
         p.cleared = true;
         p.overSince = null;
         continue;
@@ -422,7 +524,7 @@ export class LabScene extends Phaser.Scene {
       const rest = p.body.isSleeping || speed < 0.32;
       if (rest) {
         if (p.overSince == null) p.overSince = now;
-        else if (now - p.overSince >= DANGER_MS) {
+        else if (now - p.overSince >= DANGER_HOLD_MS) {
           this.gameOver();
           return;
         }
@@ -431,6 +533,7 @@ export class LabScene extends Phaser.Scene {
         p.overSince = null;
       }
     }
+    if (saved) this.voiceClutch(saved.x, saved.y, saved.band, now);
     const pulse = hot ? 0.55 + Math.sin(now / 90) * 0.4 : 0.5;
     this.drawDanger(pulse);
   }

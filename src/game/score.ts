@@ -1,3 +1,5 @@
+import { mergeScore, popScore } from './labFeel';
+
 export const SCORE_KEY = 'alpha11_lab_score';
 export const BEST_KEY = 'alpha11_lab_best';
 
@@ -23,13 +25,16 @@ export function resetScore(): void {
   localStorage.setItem(SCORE_KEY, '0');
 }
 
-/** Points for a merge that produces tier N. Combo ×1.2 if last merge was <1s. */
-export function mergePoints(tier: number, combo: boolean): number {
-  const base = tier * tier * 10;
-  return Math.round(base * (combo ? 1.2 : 1));
+/**
+ * Points for a merge that produces tier N.
+ * The streak curve lives in labFeel: flat on the first fuse, the old ×1.2
+ * on the second, then +0.05 a step until ×1.35.
+ */
+export function mergePoints(tier: number, combo: number): number {
+  return mergeScore(tier, combo);
 }
 
-/** A11+A11 pop: merge formula plus the same amount again as bonus. */
-export function popPoints(combo: boolean): number {
-  return mergePoints(11, combo) * 2;
+/** A11+A11 pop: the tier-11 merge, paid twice. */
+export function popPoints(combo: number): number {
+  return popScore(combo);
 }
