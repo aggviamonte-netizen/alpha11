@@ -8,6 +8,7 @@ import {
   SphereGeometry,
   TorusGeometry,
 } from 'three';
+import { steerLean } from '../rushFeel';
 import { C } from './palette';
 
 export type BlokRig = {
@@ -143,6 +144,7 @@ export function poseBlok(
   grounded: boolean,
   vh: number,
   boosting: boolean,
+  steer = 0,
 ): void {
   const swing = grounded ? Math.sin(run) : 0.16;
   const bob = grounded ? Math.abs(Math.sin(run)) * 0.035 : 0;
@@ -162,4 +164,5 @@ export function poseBlok(
   const sx = boosting ? 1.08 : 1;
   const sy = boosting ? 0.92 : 1;
   rig.body.scale.set(sx, sy, sx);
+  rig.body.rotation.z = steerLean(steer);
 }

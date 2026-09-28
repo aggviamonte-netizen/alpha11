@@ -6,6 +6,7 @@ import {
   SpriteMaterial,
   Vector3,
 } from 'three';
+import { VOICE_TOP_PX, VOICE_Z } from '../rushFeel';
 
 function glowTex(inner: string, outer: string): CanvasTexture {
   const c = document.createElement('canvas');
@@ -64,11 +65,15 @@ export class RushFx {
   private trail: Spark[] = [];
   private wash: HTMLElement | null = null;
   private floats: HTMLElement | null = null;
+  private voice: HTMLElement | null = null;
   private rate = 1;
 
-  bindDom(wash: HTMLElement, floats: HTMLElement): void {
+  bindDom(wash: HTMLElement, floats: HTMLElement, voice: HTMLElement): void {
     this.wash = wash;
     this.floats = floats;
+    this.voice = voice;
+    voice.style.top = `${VOICE_TOP_PX}px`;
+    voice.style.zIndex = String(VOICE_Z);
   }
 
   setRate(n: number): void {
@@ -125,12 +130,30 @@ export class RushFx {
     });
   }
 
-  flash(color: 'lime' | 'orange' | 'red'): void {
+  flash(color: 'lime' | 'orange' | 'red' | 'cyan'): void {
     if (!this.wash) return;
     this.wash.dataset.tone = color;
     this.wash.classList.remove('on');
     void this.wash.offsetWidth;
     this.wash.classList.add('on');
+  }
+
+  /** Craft punch above the HUD. A new shout replaces the one still rising. */
+  banner(text: string, whisper: string, color: string): void {
+    if (!this.voice) return;
+    this.voice.replaceChildren();
+    const line = document.createElement('span');
+    line.className = 'rush-banner';
+    line.style.color = color;
+    line.textContent = text;
+    const under = document.createElement('span');
+    under.className = 'rush-whisper';
+    under.textContent = whisper;
+    this.voice.append(line, under);
+    window.setTimeout(() => {
+      line.remove();
+      under.remove();
+    }, 900);
   }
 
   float(label: string, big = false): void {

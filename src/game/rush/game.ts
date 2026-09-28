@@ -13,13 +13,47 @@ import {
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { el } from '../dom';
 import { loadRushBest, saveRushBest } from '../rushScore';
-import { sfxBoost, sfxCore, sfxJump, sfxLand, sfxOrbit, sfxOver, unlockSfx } from '../sfx';
+import {
+  ACK_MS,
+  BEAM_WINDOW,
+  CRASH_SQUASH,
+  JUMP_BURST,
+  JUMP_SQUASH,
+  SPIKE_WINDOW,
+  accentCount,
+  bannerAllowed,
+  beamHits,
+  beamNear,
+  burstColor,
+  burstCount,
+  controlClasses,
+  countsForStreak,
+  isCleanLand,
+  isPerfectLane,
+  isStreakMilestone,
+  landBurst,
+  landShake,
+  landSquash,
+  landWash,
+  momentShake,
+  momentVoice,
+  momentWash,
+  nextCombo,
+  spikeHits,
+  spikeNear,
+  streakBanner,
+  surgeStarted,
+  voiceColor,
+  withinStreak,
+  type RushMoment,
+} from '../rushFeel';
+import { sfxBoost, sfxCore, sfxHit, sfxJump, sfxKill, sfxLand, sfxOrbit, sfxOver, unlockSfx } from '../sfx';
 import { createBlok, poseBlok, type BlokRig } from './blok';
 import { RushFx } from './fx';
 import { RushInput } from './input';
 import { C } from './palette';
 import { Quality } from './quality';
-import { RushTrack, TRACK_W } from './track';
+import { RushTrack, TRACK_W, type Prop } from './track';
 import { RushWorld } from './world';
 
 const GRAV = 32;
@@ -90,6 +124,12 @@ export class RushGame {
   private hintShown = false;
   private shake = 0;
   private squash = 1;
+  private combo = 0;
+  private lastCleanAt = 0;
+  private lastBanner = '';
+  private lastBannerAt = 0;
+  private boostWas = false;
+  private grazed = new WeakSet<Prop>();
   private dead = false;
   private host: HTMLElement;
   private stage: HTMLElement;
@@ -135,7 +175,7 @@ export class RushGame {
     this.resetStats();
     this.best = loadRushBest();
     this.bindUi();
-    this.fx.bindDom(el('rush-wash'), el('rush-floats'));
+    this.fx.bindDom(el('rush-wash'), el('rush-floats'), el('rush-voice'));
     this.syncHud();
     this.placeHero();
     this.world.sync(this.track, this.rig.root.position, false);
@@ -225,6 +265,12 @@ export class RushGame {
     this.pulse = 0;
     this.shake = 0;
     this.squash = 1;
+    this.combo = 0;
+    this.lastCleanAt = 0;
+    this.lastBanner = '';
+    this.lastBannerAt = 0;
+    this.boostWas = false;
+    this.grazed = new WeakSet();
   }
 
   private beginPlay(): void {
@@ -265,6 +311,7 @@ export class RushGame {
     this.fx.tick(dt);
     if (this.phase === 'play') {
       this.fx.streaksTick(this.rig.root.position, this.track.frameAt(this.s).tangent, this.boostT > 0, true);
+      this.ackInput();
     }
     this.input.endFrame();
     this.renderer.render(this.scene, this.camera);
@@ -274,7 +321,15 @@ export class RushGame {
     if (this.input.jumpPressed) this.wantJump();
     this.holding = this.input.jumpHeld;
 
-    if (this.input.boostHeld) this.boostT = Math.max(this.boostT, 0.16);
+    if (this.input.boostHeld) {
+      const prev = this.boostT;
+      this.boostT = Math.max(this.boostT, 0.16);
+      if (surgeStarted(prev, this.boostT)) {
+        sfxBoost();
+        this.punch('surge', this.rig.root.position);
+        this.syncHud();
+      }
+    }
 
     if (this.looping) this.tickLoop(dt);
     else this.tickRun(dt);
@@ -314,9 +369,9 @@ export class RushGame {
     this.buffer = 0;
     this.height = Math.max(this.height, HEIGHT_OFF + 0.05);
     this.hideHint();
-    this.squash = 0.78;
+    this.squash = JUMP_SQUASH;
     sfxJump();
-    this.fx.burst(this.rig.root.position, 'lime', 7);
+    this.fx.burst(this.rig.root.position, 'lime', JUMP_BURST);
   }
 
   private tickRun(dt: number): void {
@@ -360,14 +415,11 @@ export class RushGame {
       this.s += this.vs * dt;
       const on = this.track.hasSurface(this.s, this.lateral);
       if (on && this.height <= HEIGHT_OFF && this.vh <= 0) {
+        const fall = this.vh;
+        const wasAir = !this.grounded;
         this.height = HEIGHT_OFF;
         this.vh = 0;
-        if (!this.grounded) {
-          this.squash = 0.72;
-          this.shake = 0.18;
-          sfxLand();
-          this.fx.burst(this.rig.root.position, 'orange', 6);
-        }
+        if (wasAir) this.onLand(fall);
         this.grounded = true;
         this.coyote = COYOTE;
       } else if (this.height < -7) {
@@ -382,10 +434,19 @@ export class RushGame {
         this.boost(1.2);
         this.addBonus(25, 'TURBO');
         sfxBoost();
+        this.punch('surge', p.mesh.position);
       }
     }
     for (const p of this.track.propsNear('zone', this.s, 2.2)) {
-      if (this.grounded && this.s >= p.s && this.s <= (p.s1 ?? p.s)) this.boostT = Math.max(this.boostT, 0.28);
+      if (this.grounded && this.s >= p.s && this.s <= (p.s1 ?? p.s)) {
+        const prev = this.boostT;
+        this.boostT = Math.max(this.boostT, 0.28);
+        if (surgeStarted(prev, this.boostT)) {
+          sfxBoost();
+          this.punch('surge', this.rig.root.position);
+          this.syncHud();
+        }
+      }
     }
     for (const p of this.track.propsNear('loop', this.s, 2.4)) {
       if (this.grounded && this.speed() >= LOOP_MIN && this.s >= p.s - 0.4) {
@@ -396,7 +457,7 @@ export class RushGame {
     }
 
     this.run += dt * (this.grounded ? this.vs * 1.15 : 2.2);
-    poseBlok(this.rig, this.run, this.grounded, this.vh, this.boostT > 0);
+    poseBlok(this.rig, this.run, this.grounded, this.vh, this.boostT > 0, this.input.steer);
     if (Math.random() < (this.boostT > 0 ? 0.9 : 0.35)) {
       this.fx.drip(this.rig.root.position.clone().add(this.tmp.set(0, 0.2, -0.3)), this.boostT > 0);
     }
@@ -418,7 +479,7 @@ export class RushGame {
     this.height = HEIGHT_OFF;
     this.grounded = false;
     this.run += dt * 10;
-    poseBlok(this.rig, this.run, false, -8, true);
+    poseBlok(this.rig, this.run, false, -8, true, this.input.steer);
     if (this.loopA >= Math.PI * 2) {
       this.looping = false;
       this.s = this.loopExit;
@@ -428,8 +489,7 @@ export class RushGame {
       this.boost(1.5);
       this.addBonus(50, 'ÓRBITA', true);
       sfxOrbit();
-      this.fx.burst(this.rig.root.position, 'cyan', 14);
-      this.shake = 0.28;
+      this.punch('loop', this.rig.root.position);
     }
   }
 
@@ -441,25 +501,43 @@ export class RushGame {
       p.taken = true;
       p.mesh.visible = false;
       this.cores += 1;
+      const lane = isPerfectLane(this.lateral - p.lateral);
       this.addBonus(10, '+10');
       sfxCore();
-      this.fx.burst(p.mesh.position, 'lime', 8);
+      this.punch(lane ? 'lane' : 'core', p.mesh.position);
     }
   }
 
   private hazards(): void {
-    for (const p of this.track.propsNear('spike', this.s, 1.05)) {
-      if (!this.grounded) continue;
-      if (Math.abs(p.lateral - this.lateral) < 0.72 && this.height < 0.7) {
+    for (const p of this.track.propsNear('spike', this.s, SPIKE_WINDOW)) {
+      if (spikeHits(p.s - this.s, p.lateral - this.lateral, this.height, this.grounded)) {
         this.gameOver();
         return;
       }
     }
-    for (const p of this.track.propsNear('beam', this.s, 1.15)) {
-      if (this.height < 1.15 && Math.abs(this.lateral - p.lateral) < 1.35) {
+    for (const p of this.track.propsNear('beam', this.s, BEAM_WINDOW)) {
+      if (beamHits(p.s - this.s, this.lateral - p.lateral, this.height)) {
         this.gameOver();
         return;
       }
+    }
+    if (this.phase !== 'play') return;
+    this.graze('spike');
+    this.graze('beam');
+  }
+
+  private graze(kind: 'spike' | 'beam'): void {
+    const span = kind === 'spike' ? SPIKE_WINDOW : BEAM_WINDOW;
+    for (const p of this.track.propsNear(kind, this.s, span)) {
+      if (this.grazed.has(p)) continue;
+      const ds = p.s - this.s;
+      const dLat = this.lateral - p.lateral;
+      const near =
+        kind === 'spike' ? spikeNear(ds, dLat, this.height, this.grounded) : beamNear(ds, dLat, this.height);
+      if (!near) continue;
+      this.grazed.add(p);
+      sfxHit();
+      this.punch('near', this.rig.root.position);
     }
   }
 
@@ -543,10 +621,71 @@ export class RushGame {
     this.syncHud();
   }
 
-  private addBonus(n: number, label: string, big = false): void {
+  private addBonus(n: number, label: string | null, big = false): void {
     this.bonus += n;
-    this.fx.float(label, big);
+    if (label) this.fx.float(label, big);
     this.syncHud();
+  }
+
+  private onLand(fall: number): void {
+    this.squash = landSquash(fall);
+    sfxLand();
+    if (isCleanLand(fall)) {
+      this.punch('land', this.rig.root.position, fall);
+      return;
+    }
+    this.shake = Math.max(this.shake, landShake(fall));
+    const wash = landWash(fall);
+    if (wash) this.fx.flash(wash);
+    this.fx.burst(this.rig.root.position, burstColor('land'), landBurst(fall));
+  }
+
+  private punch(moment: RushMoment, pos: Vector3, fall = 0): void {
+    const now = performance.now();
+    if (countsForStreak(moment)) {
+      const within = withinStreak(this.lastCleanAt > 0 ? this.lastCleanAt : null, now);
+      this.combo = nextCombo(this.combo, within);
+      this.lastCleanAt = now;
+    }
+    const voice = momentVoice(moment, this.combo);
+    const milestone = countsForStreak(moment) && isStreakMilestone(this.combo);
+    const streakShout = milestone && voice?.banner === streakBanner(this.combo);
+    if (voice && bannerAllowed(now, this.lastBannerAt, voice.banner === this.lastBanner, streakShout)) {
+      this.fx.banner(voice.banner, voice.whisper, voiceColor(voice.banner));
+      this.lastBanner = voice.banner;
+      this.lastBannerAt = now;
+    }
+    if (milestone) sfxKill();
+    const wash = moment === 'land' ? landWash(fall) : momentWash(moment, this.combo);
+    if (wash) this.fx.flash(wash);
+    const amp = moment === 'land' ? landShake(fall) : momentShake(moment, this.combo);
+    if (amp > 0) this.shake = Math.max(this.shake, amp);
+    const n = moment === 'land' ? landBurst(fall) : burstCount(moment);
+    this.fx.burst(pos, burstColor(moment), n);
+    const accent = accentCount(moment, this.combo);
+    if (accent > 0) this.fx.burst(pos, 'lime', accent);
+  }
+
+  private ackInput(): void {
+    this.syncBtn(el('btn-jump'), this.input.jumpHeld, this.input.jumpPressed);
+    const boostPulse = this.input.boostHeld && !this.boostWas;
+    this.syncBtn(el('btn-boost'), this.input.boostHeld, boostPulse);
+    this.boostWas = this.input.boostHeld;
+  }
+
+  private syncBtn(btn: HTMLElement, held: boolean, pulsed: boolean): void {
+    const classes = controlClasses(held, pulsed);
+    btn.classList.toggle('is-held', classes.includes('is-held'));
+    if (!pulsed) return;
+    const stamp = String(performance.now());
+    btn.dataset.ack = stamp;
+    btn.classList.remove('is-ack');
+    void btn.offsetWidth;
+    btn.classList.add('is-ack');
+    window.setTimeout(() => {
+      if (btn.dataset.ack !== stamp) return;
+      btn.classList.remove('is-ack');
+    }, ACK_MS);
   }
 
   private gameOver(): void {
@@ -559,10 +698,9 @@ export class RushGame {
     saveRushBest(this.score);
     this.best = loadRushBest();
     this.syncHud();
-    this.squash = 0.62;
-    this.shake = 0.45;
-    this.fx.burst(this.rig.root.position, 'orange', 12);
-    this.fx.flash('red');
+    this.squash = CRASH_SQUASH;
+    this.punch('crash', this.rig.root.position);
+    sfxHit();
     sfxLand();
     sfxOver();
     el('over-score').textContent = `Puntos ${this.score} · Mejor ${this.best}`;

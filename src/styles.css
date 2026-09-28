@@ -1266,8 +1266,25 @@ button {
     0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
-.rush-btn:active {
-  transform: scale(0.96);
+.rush-btn:active,
+.rush-btn.is-held {
+  transform: scale(0.94);
+  filter: brightness(1.12);
+}
+
+.rush-btn.is-ack {
+  animation: rush-ack 180ms ease-out;
+}
+
+@keyframes rush-ack {
+  from {
+    transform: scale(0.86);
+    filter: brightness(1.28);
+  }
+  to {
+    transform: scale(0.94);
+    filter: brightness(1.12);
+  }
 }
 
 .rush-btn-jump {
@@ -1302,6 +1319,10 @@ button {
   background: rgba(255, 59, 74, 0.2);
 }
 
+.rush-wash[data-tone='cyan'] {
+  background: rgba(110, 231, 255, 0.16);
+}
+
 @keyframes rush-wash {
   from {
     opacity: 1;
@@ -1316,10 +1337,73 @@ button {
   left: 0;
   right: 0;
   top: 38%;
-  z-index: 2;
+  z-index: 3;
   display: grid;
   place-items: center;
   pointer-events: none;
+}
+
+.rush-voice {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 86px;
+  /* Above the .rush-veil overlays (z 3) so ¡CORTE! reads over game over. */
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  max-height: 64px;
+  pointer-events: none;
+}
+
+.rush-banner,
+.rush-whisper {
+  font-weight: 800;
+  text-shadow:
+    0 2px 0 #0b0b0c,
+    0 0 3px #0b0b0c,
+    0 0 14px rgba(11, 11, 12, 0.7);
+  transform-origin: 50% 0;
+  animation: rush-banner 880ms ease-out forwards;
+}
+
+/* Game over: give the crash shout a subtle plate so it survives the veil. */
+.rush-stage:has(#overlay-over:not([hidden])) .rush-banner {
+  padding: 2px 12px;
+  border-radius: 10px;
+  background: rgba(11, 11, 12, 0.55);
+}
+
+.rush-banner {
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  -webkit-text-stroke: 4px #0b0b0c;
+  paint-order: stroke fill;
+}
+
+.rush-whisper {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: #6ee7ff;
+  animation-duration: 840ms;
+}
+
+@keyframes rush-banner {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.86);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    /* Cap the drift at 8px: the voice never rises above ~78px (HUD ~58px). */
+    transform: translateY(-8px) scale(1);
+  }
 }
 
 .rush-float {
