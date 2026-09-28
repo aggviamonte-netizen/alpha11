@@ -1348,10 +1348,13 @@ button {
   left: 8px;
   right: 8px;
   top: 86px;
-  z-index: 3;
+  /* Above the .rush-veil overlays (z 3) so ¡CORTE! reads over game over. */
+  z-index: 4;
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 2px;
+  max-height: 64px;
   pointer-events: none;
 }
 
@@ -1360,8 +1363,17 @@ button {
   font-weight: 800;
   text-shadow:
     0 2px 0 #0b0b0c,
-    0 0 12px rgba(11, 11, 12, 0.45);
+    0 0 3px #0b0b0c,
+    0 0 14px rgba(11, 11, 12, 0.7);
+  transform-origin: 50% 0;
   animation: rush-banner 880ms ease-out forwards;
+}
+
+/* Game over: give the crash shout a subtle plate so it survives the veil. */
+.rush-stage:has(#overlay-over:not([hidden])) .rush-banner {
+  padding: 2px 12px;
+  border-radius: 10px;
+  background: rgba(11, 11, 12, 0.55);
 }
 
 .rush-banner {
@@ -1385,11 +1397,12 @@ button {
   }
   18% {
     opacity: 1;
-    transform: translateY(0) scale(1.06);
+    transform: translateY(0) scale(1.04);
   }
   100% {
     opacity: 0;
-    transform: translateY(-28px) scale(1);
+    /* Cap the drift at 8px: the voice never rises above ~78px (HUD ~58px). */
+    transform: translateY(-8px) scale(1);
   }
 }
 
