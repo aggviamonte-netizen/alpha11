@@ -4,10 +4,13 @@ import { burstDots, floatLabel, screenWash } from './juice';
 import { sfxCore, sfxMerge, sfxOver, sfxSlide, sfxWin, unlockSfx } from './sfx';
 import { drawShiftPiece, shiftPiece } from './shiftPieces';
 import {
+  BANNER_LIFT_PX,
+  BANNER_SIZE_PX,
   HIT_PAUSE_MS,
   SLIDE_MS,
-  comboBanner,
-  comboWhisper,
+  WHISPER_LIFT_PX,
+  WHISPER_SIZE_PX,
+  boardBand,
   impactShake,
   impactZoom,
   isMergeStreak,
@@ -16,9 +19,13 @@ import {
   mergeImpact,
   mergePunchScale,
   nextMergeStreak,
-  streakBanner,
-  streakWhisper,
+  pressureEntered,
+  slideVoice,
   tierCeremony,
+  voiceColor,
+  voiceStack,
+  type BoardBand,
+  type ShiftVoice,
 } from './shiftFeel';
 import { loadShiftBest, resetShiftScore, saveShiftScore, shiftMergePoints } from './shiftScore';
 import { paintLabBackdrop } from './labBackdrop';
@@ -76,6 +83,7 @@ export class ShiftScene extends Phaser.Scene {
   private swipe: { x: number; y: number } | null = null;
   private queued: Dir | null = null;
   private mergeStreak = 0;
+  private pressure: BoardBand = 'none';
   private celebrated = new Set<number>();
   private boardGlow!: Phaser.GameObjects.Graphics;
 
@@ -95,6 +103,7 @@ export class ShiftScene extends Phaser.Scene {
     this.swipe = null;
     this.queued = null;
     this.mergeStreak = 0;
+    this.pressure = 'none';
     this.celebrated.clear();
     this.cameras.main.resetFX();
     this.cameras.main.setZoom(1);
@@ -236,6 +245,10 @@ export class ShiftScene extends Phaser.Scene {
     const mergedTiles = this.tiles.filter((t) => t.merged && !t.dead);
     const merges = mergedTiles.length;
     const maxTier = mergedTiles.reduce((m, t) => Math.max(m, t.tier), 0);
+    const freshTier = mergedTiles.reduce((top, t) => {
+      if (!tierCeremony(t.tier) || this.celebrated.has(t.tier)) return top;
+      return Math.max(top, t.tier);
+    }, 0);
     this.mergeStreak = nextMergeStreak(this.mergeStreak, merges);
     this.score += gained;
     saveShiftScore(this.score);
@@ -245,7 +258,6 @@ export class ShiftScene extends Phaser.Scene {
     if (merges) {
       sfxMerge(merges > 1 || isMergeStreak(this.mergeStreak));
       this.flashBoard();
-      this.voice(merges);
     }
     const impact = mergeImpact(maxTier, merges);
     if (impact !== 'none') this.punchBoard(impact);
@@ -257,6 +269,7 @@ export class ShiftScene extends Phaser.Scene {
         this.spawn(1);
         this.refreshSprites();
         this.busy = false;
+        const spoke = this.settleVoice(merges, freshTier > 0 ? freshTier : maxTier, freshTier > 0, impact);
         if (this.tiles.some((t) => t.tier >= 11) && !this.won) {
           this.queued = null;
           this.win();
@@ -264,7 +277,7 @@ export class ShiftScene extends Phaser.Scene {
         }
         if (!this.canMove()) {
           this.queued = null;
-          this.gameOver();
+          this.gameOver(spoke);
           return;
         }
         const next = this.queued;
@@ -284,27 +297,45 @@ export class ShiftScene extends Phaser.Scene {
     }
   }
 
-  private voice(merges: number): void {
-    const streakHit = isMergeStreak(this.mergeStreak);
-    const combo = comboBanner(merges);
-    const primary = combo ?? (streakHit ? streakBanner(this.mergeStreak) : null);
-    if (primary) {
-      floatLabel(this, W / 2, ORIGIN_Y - 32, primary, {
-        size: '20px',
-        color: combo ? '#E8FF47' : '#7CFFB2',
-        lift: 36,
-        duration: 900,
-      });
+  /**
+   * One shout once the new tile exists, so a lock is the real hole count.
+   * A fresh lock also borrows the merge shake when the slide itself was quiet.
+   */
+  private settleVoice(merges: number, tier: number, tierFresh: boolean, impact: 'none' | 'soft' | 'hard'): boolean {
+    const band = boardBand(this.emptyCells().length, this.canMove());
+    const entered = pressureEntered(this.pressure, band);
+    this.pressure = band;
+    const pressure = entered ? band : 'none';
+    if (impact === 'none' && pressure !== 'none') {
+      const extra = mergeImpact(0, 0, pressure);
+      if (extra !== 'none') this.punchBoard(extra);
     }
-    const whisper = streakHit ? streakWhisper(this.mergeStreak) : merges >= 3 ? comboWhisper(merges) : null;
-    if (whisper) {
-      floatLabel(this, W / 2, ORIGIN_Y - 4, whisper, {
-        size: '13px',
-        color: '#7CFFB2',
-        lift: 24,
-        duration: 860,
-      });
-    }
+    const voice = slideVoice({
+      merges,
+      streak: this.mergeStreak,
+      tier,
+      tierFresh,
+      pressure,
+    });
+    if (!voice) return false;
+    this.showVoice(voice);
+    return true;
+  }
+
+  private showVoice(voice: ShiftVoice): void {
+    const at = voiceStack(ORIGIN_Y);
+    floatLabel(this, W / 2, at.bannerY, voice.banner, {
+      size: `${BANNER_SIZE_PX}px`,
+      color: voiceColor(voice.banner),
+      lift: BANNER_LIFT_PX,
+      duration: 900,
+    });
+    floatLabel(this, W / 2, at.whisperY, voice.whisper, {
+      size: `${WHISPER_SIZE_PX}px`,
+      color: '#6EE7FF',
+      lift: WHISPER_LIFT_PX,
+      duration: 860,
+    });
   }
 
   private punchBoard(impact: 'soft' | 'hard'): void {
@@ -451,19 +482,13 @@ export class ShiftScene extends Phaser.Scene {
         ease: 'Back.out',
       });
     }
-    this.celebrateTier(tile, piece.hex);
+    this.celebrateTier(tile);
   }
 
-  private celebrateTier(tile: Tile, color: string): void {
+  private celebrateTier(tile: Tile): void {
     const ceremony = tierCeremony(tile.tier);
     if (!ceremony || this.celebrated.has(tile.tier)) return;
     this.celebrated.add(tile.tier);
-    floatLabel(this, W / 2, ORIGIN_Y + BOARD / 2, ceremony.label, {
-      size: '26px',
-      color,
-      lift: 52,
-      duration: 1100,
-    });
     screenWash(this, ceremony.wash, ceremony.alpha, 320);
     if (tile.tier < 11) sfxCore();
   }
@@ -581,7 +606,7 @@ export class ShiftScene extends Phaser.Scene {
     this.phase = 'play';
   }
 
-  private gameOver(): void {
+  private gameOver(holdVoice = false): void {
     if (this.phase !== 'play') return;
     this.phase = 'over';
     const prevBest = this.best;
@@ -595,7 +620,15 @@ export class ShiftScene extends Phaser.Scene {
     const rec = document.getElementById('over-record');
     if (rec) rec.hidden = !(this.score > 0 && this.score >= this.best && this.score > prevBest);
     el('keep').hidden = true;
-    el('overlay-over').hidden = false;
+    if (!holdVoice) {
+      el('overlay-over').hidden = false;
+      return;
+    }
+    el('overlay-over').hidden = true;
+    this.time.delayedCall(480, () => {
+      if (this.phase !== 'over') return;
+      el('overlay-over').hidden = false;
+    });
   }
 
   private syncHud(): void {

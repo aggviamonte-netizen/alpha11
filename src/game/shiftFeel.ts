@@ -2,7 +2,25 @@
 export const SLIDE_MS = 118;
 export const HIT_PAUSE_MS = 20;
 
+/** Same punch sizes the other titles float over play. */
+export const BANNER_SIZE_PX = 22;
+export const WHISPER_SIZE_PX = 13;
+export const BANNER_LIFT_PX = 28;
+export const WHISPER_LIFT_PX = 18;
+
 export type MergeImpact = 'none' | 'soft' | 'hard';
+
+/** One hole left, or a full board that can still merge. A dead board stays quiet. */
+export type BoardBand = 'none' | 'aprieta' | 'cierre';
+
+export type ShiftVoice = { banner: string; whisper: string };
+
+export type TierCeremony = {
+  banner: string;
+  whisper: string;
+  wash: number;
+  alpha: number;
+};
 
 export function nextMergeStreak(prev: number, merges: number): number {
   if (merges > 0) return prev + 1;
@@ -17,7 +35,7 @@ export function isMergeStreak(streak: number): boolean {
 export function comboBanner(merges: number): string | null {
   if (merges >= 4) return '¡QUÉ CADENA!';
   if (merges === 3) return '¡TRIPLE!';
-  if (merges === 2) return 'DOBLE';
+  if (merges === 2) return '¡DOBLE!';
   return null;
 }
 
@@ -31,8 +49,8 @@ export function comboWhisper(merges: number): string | null {
 export function streakBanner(streak: number): string | null {
   if (streak >= 12 && isMergeStreak(streak)) return '¡IMPARABLE!';
   if (streak >= 8 && isMergeStreak(streak)) return '¡QUÉ RACHA!';
-  if (streak === 5) return 'RACHA 5';
-  if (streak === 3) return 'RACHA 3';
+  if (streak === 5) return '¡RACHA!';
+  if (streak === 3) return '¡TRES!';
   return null;
 }
 
@@ -44,18 +62,91 @@ export function streakWhisper(streak: number): string | null {
   return null;
 }
 
-export type TierCeremony = {
-  label: string;
-  wash: number;
-  alpha: number;
-};
-
-/** First time a run reaches T7, T9, or T11. Names match the tessera cast. */
+/** First time a run reaches T7, T9, or T11. Shouts are the tessera cast. */
 export function tierCeremony(tier: number): TierCeremony | null {
-  if (tier === 7) return { label: 'T7 · FLECHA', wash: 0x7cffb2, alpha: 0.16 };
-  if (tier === 9) return { label: 'T9 · NODO', wash: 0x4ad4ff, alpha: 0.18 };
-  if (tier === 11) return { label: 'T11 · NÚCLEO', wash: 0xf4f1ea, alpha: 0.2 };
+  if (tier === 7) return { banner: '¡FLECHA!', whisper: 'verde y recta', wash: 0x7cffb2, alpha: 0.16 };
+  if (tier === 9) return { banner: '¡NODO!', whisper: 'ya se conecta', wash: 0x4ad4ff, alpha: 0.18 };
+  if (tier === 11) return { banner: '¡NÚCLEO!', whisper: 'blanco en el centro', wash: 0xf4f1ea, alpha: 0.2 };
   return null;
+}
+
+/** 0 free cells but a merge remains, or a single hole left. */
+export function boardBand(empty: number, canMove: boolean): BoardBand {
+  if (!canMove) return 'none';
+  if (empty <= 0) return 'cierre';
+  if (empty === 1) return 'aprieta';
+  return 'none';
+}
+
+/** Speak when the board newly tightens. Staying there does not repeat. */
+export function pressureEntered(prev: BoardBand, next: BoardBand): boolean {
+  return next !== 'none' && next !== prev;
+}
+
+export function pressureBanner(band: BoardBand): string | null {
+  if (band === 'cierre') return '¡CIERRE!';
+  if (band === 'aprieta') return '¡HUECO!';
+  return null;
+}
+
+export function pressureWhisper(band: BoardBand): string | null {
+  if (band === 'cierre') return 'sin hueco';
+  if (band === 'aprieta') return 'queda una';
+  return null;
+}
+
+/**
+ * Ceremony takes the banner. A multi-merge outranks a streak.
+ * A live streak still supplies the whisper. Pressure speaks alone
+ * when the slide is quiet, and a fresh full board can underwrite a combo.
+ */
+export function slideVoice(opts: {
+  merges: number;
+  streak: number;
+  tier: number;
+  tierFresh: boolean;
+  pressure: BoardBand;
+}): ShiftVoice | null {
+  const ceremony = opts.tierFresh ? tierCeremony(opts.tier) : null;
+  const combo = comboBanner(opts.merges);
+  const comboLine = comboWhisper(opts.merges);
+  const streakLine = streakBanner(opts.streak);
+  const streakUnder = streakWhisper(opts.streak);
+  const pressureLine = pressureBanner(opts.pressure);
+  const pressureUnder = pressureWhisper(opts.pressure);
+
+  if (ceremony) {
+    return { banner: ceremony.banner, whisper: streakUnder ?? comboLine ?? ceremony.whisper };
+  }
+  if (combo && comboLine) {
+    const whisper = streakUnder ?? (opts.pressure === 'cierre' ? pressureUnder : null) ?? comboLine;
+    return { banner: combo, whisper };
+  }
+  if (streakLine && streakUnder) {
+    return {
+      banner: streakLine,
+      whisper: opts.pressure === 'cierre' ? (pressureUnder ?? streakUnder) : streakUnder,
+    };
+  }
+  if (pressureLine && pressureUnder) return { banner: pressureLine, whisper: pressureUnder };
+  return null;
+}
+
+export function voiceColor(banner: string): string {
+  if (banner === '¡DOBLE!' || banner === '¡TRIPLE!' || banner === '¡TRES!') return '#FF8BD1';
+  if (banner === '¡RACHA!' || banner === '¡QUÉ RACHA!' || banner === '¡QUÉ CADENA!') return '#E8FF47';
+  if (banner === '¡IMPARABLE!' || banner === '¡NÚCLEO!') return '#F4F1EA';
+  if (banner === '¡FLECHA!') return '#7CFFB2';
+  if (banner === '¡NODO!' || banner === '¡HUECO!') return '#4AD4FF';
+  if (banner === '¡CIERRE!') return '#FF7A45';
+  return '#E8FF47';
+}
+
+/** Banner stack in the gap above the board so the top row stays readable. */
+export function voiceStack(boardTop: number): { bannerY: number; whisperY: number } {
+  const whisperY = boardTop - 14;
+  const bannerY = whisperY - 26;
+  return { bannerY, whisperY };
 }
 
 /** Primary sparks. Climbs with tier and stays inside burstDots' cap of 12. */
@@ -82,10 +173,10 @@ export function mergePunchScale(tier: number): number {
   return 1.14;
 }
 
-/** Multi-merge and T8+ earn a shake. Triples and T11 punch harder. */
-export function mergeImpact(maxTier: number, merges: number): MergeImpact {
-  if (merges >= 3 || maxTier >= 11) return 'hard';
-  if (merges > 1 || maxTier >= 8) return 'soft';
+/** Multi-merge and T8+ earn a shake. A fresh lock punches too. Triples and T11 hit harder. */
+export function mergeImpact(maxTier: number, merges: number, pressure: BoardBand = 'none'): MergeImpact {
+  if (pressure === 'cierre' || merges >= 3 || maxTier >= 11) return 'hard';
+  if (pressure === 'aprieta' || merges > 1 || maxTier >= 8) return 'soft';
   return 'none';
 }
 
